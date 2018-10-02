@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 )
@@ -25,8 +26,15 @@ func StartServer() {
 }
 
 func newProxy() *httputil.ReverseProxy {
+	dialer := &net.Dialer{
+		Timeout:   upstreamTimeout,
+		KeepAlive: upstreamTimeout,
+	}
 	return &httputil.ReverseProxy{
 		Director:       proxyRequest,
 		ModifyResponse: proxyResponse,
+		Transport: &http.Transport{
+			DialContext: dialer.DialContext,
+		},
 	}
 }
