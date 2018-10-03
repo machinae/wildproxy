@@ -2,11 +2,17 @@ package main
 
 import (
 	"errors"
+	"io/ioutil"
 	"mime"
 	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 // Function that modifes the response
+// TODO deal with 301 redirects
 func proxyResponse(r *http.Response) error {
 	if r == nil {
 		return errors.New("Content is empty")
@@ -18,6 +24,11 @@ func proxyResponse(r *http.Response) error {
 	if !isHtml(r) {
 		return nil
 	}
+
+	if err := rewriteLinks(r); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -56,4 +67,57 @@ func removeSecHeaders(r *http.Response) {
 
 	r.Header.Del("X-Frame-Options")
 
+}
+
+// Returns a new body with absolute urls in <a> and <script> tags changed to
+// relative URLs from the proxy
+func rewriteLinks(r *http.Response) error {
+	doc, err := goquery.NewDocumentFromReader(r.Body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	if r.Request != nil {
+		doc.Url = r.Request.URL
+	}
+
+	// Replace links href
+	doc.Find("a").Each(func(i int, el *goquery.Selection) {
+		href, ok := el.Attr("href")
+		if !ok {
+			return
+		}
+		el.SetAttr("href", resolveProxyURL(doc.Url, href))
+	})
+
+	// Replace script src
+	doc.Find("script").Each(func(i int, el *goquery.Selection) {
+		src, ok := el.Attr("src")
+		if !ok {
+			return
+		}
+		el.SetAttr("src", resolveProxyURL(doc.Url, src))
+	})
+
+	// replace with modified body
+	html, err := doc.Html()
+	if err != nil {
+		return err
+	}
+	r.Body = ioutil.NopCloser(strings.NewReader(html))
+	return nil
+}
+
+// convert a URL to relative from the proxy
+func resolveProxyURL(pageUrl *url.URL, rawUrl string) string {
+	if pageUrl == nil || pageUrl.Host == "" {
+		return rawUrl
+	}
+	u, err := url.Parse(rawUrl)
+	if err != nil {
+		return rawUrl
+	}
+	// convert to absolute
+	nu := pageUrl.ResolveReference(u)
+	return "/" + nu.String()
 }
