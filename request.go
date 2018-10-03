@@ -13,18 +13,19 @@ import (
 // TODO support http scheme?
 func proxyRequest(req *http.Request) {
 	path := strings.TrimPrefix(req.URL.Path, "/")
-	targetUrl := path
+	targetUrl := strings.ToLower(path)
 	if len(req.URL.RawQuery) > 0 {
 		targetUrl += "?" + req.URL.RawQuery
+	}
+
+	if !strings.HasPrefix(targetUrl, "http") {
+		targetUrl = "https://" + targetUrl
 	}
 
 	u, err := url.Parse(targetUrl)
 	if err != nil {
 		log.Printf("Request URL error: %s\n", err)
 		return
-	}
-	if u.Scheme == "" {
-		u.Scheme = "https"
 	}
 
 	req.URL = u
