@@ -112,16 +112,23 @@ func resolveRedirect(r *http.Response) {
 	r.Header.Set("Location", rdUrl)
 }
 
+// Remove various browser security headers like CSP and HSTS to fix framing
+// issues and improve privacy by disabling reporting
 func removeSecHeaders(r *http.Response) {
-	// Drop CSP header for now
-	r.Header.Del("Content-Security-Policy")
-	r.Header.Del("Content-Security-Policy-Report-Only")
+	secHeaders := []string{
+		"Content-Security-Policy",
+		"Content-Security-Policy-Report-Only",
+		"Expect-CT",
+		"Public-Key-Pins",
+		"Public-Key-Pins-Report-Only",
+		"Strict-Transport-Security",
+		"X-Content-Type-Options",
+		"X-Frame-Options",
+	}
 
-	// Disable HSTS
-	r.Header.Del("Strict-Transport-Security")
-
-	r.Header.Del("X-Frame-Options")
-
+	for _, h := range secHeaders {
+		r.Header.Del(h)
+	}
 }
 
 // Returns a new body with absolute urls in <a> and <script> tags changed to
