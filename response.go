@@ -13,6 +13,26 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+// Javascript to inject into the page
+// Monkey patches XHR to proxy URLs
+// Source: https://github.com/Rob--W/cors-anywhere
+// Source: https://stackoverflow.com/questions/5202296/add-a-hook-to-all-ajax-requests-on-a-page
+// TODO look into relative urls in scripts like rel2abs
+var injectScript = `
+(function() {
+    var origin = window.location.protocol + '//' + window.location.host;
+    var open = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function() {
+        var args = [].slice.call(arguments);
+        var targetOrigin = /^https?:\/\/([^\/]+)/i.exec(args[1]);
+        if (targetOrigin && targetOrigin[0].toLowerCase() !== origin) {
+            args[1] = origin + '/' + args[1];
+        }
+        return open.apply(this, args);
+    };
+})();
+`
+
 // Function that modifes the response
 // TODO deal with 301 redirects
 func proxyResponse(r *http.Response) error {
@@ -145,6 +165,10 @@ func rewriteLinks(r *http.Response) error {
 	// Add dummy favicon to prevent requests to favicon.ico
 	faviconTag := `<link rel="icon" href="data:,">`
 	headEl.AppendHtml(faviconTag)
+
+	// Inject script
+	scriptTag := fmt.Sprintf("<script>%s</script>", injectScript)
+	headEl.AppendHtml(scriptTag)
 
 	// replace with modified body
 	html, err := doc.Html()
