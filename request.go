@@ -31,7 +31,14 @@ func proxyRequest(req *http.Request) {
 	req.URL = u
 	req.Host = u.Host
 
+	setOutHeaders(req)
+
 	if verbose {
 		log.Printf("Proxying request to %s", req.URL)
 	}
+}
+
+func setOutHeaders(req *http.Request) {
+	req.Header.Set("X-Forwarded-Proto", req.URL.Scheme)
+	req.Header.Set("X-Forwarded-Host", req.Host)
 }
