@@ -126,8 +126,8 @@ func rewriteLinks(r *http.Response) error {
 		doc.Url = r.Request.URL
 	}
 
-	// Replace links href
-	doc.Find("a").Each(func(i int, el *goquery.Selection) {
+	// Replace links and styles href
+	doc.Find("a,link").Each(func(i int, el *goquery.Selection) {
 		href, ok := el.Attr("href")
 		if !ok {
 			return
@@ -190,6 +190,10 @@ func rewriteLinks(r *http.Response) error {
 // convert a URL to relative from the proxy
 func resolveProxyURL(pageUrl *url.URL, rawUrl string) string {
 	if pageUrl == nil || pageUrl.Host == "" {
+		return rawUrl
+	}
+	// data urls don't need to be resolved
+	if strings.HasPrefix(rawUrl, "data:") {
 		return rawUrl
 	}
 	u, err := url.Parse(rawUrl)

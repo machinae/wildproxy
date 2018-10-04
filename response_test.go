@@ -59,6 +59,7 @@ func TestProxyResponse(t *testing.T) {
 	// absolute links rewritten to proxy
 	assert.Contains(body, `<a href="/https://www.example.com/page/1">`)
 	assert.Contains(body, `<a href="/https://www.example.com/page/2">`)
+	assert.Contains(body, `<link rel="stylesheet" href="/https://www.example.com/assets/style.css"/>`)
 
 	// relative links resolved with page URL
 	assert.Contains(body, `<a href="/https://www.example.com/page/3">`)
