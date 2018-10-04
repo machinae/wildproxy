@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -86,6 +87,7 @@ func removeSecHeaders(r *http.Response) {
 
 // Returns a new body with absolute urls in <a> and <script> tags changed to
 // relative URLs from the proxy
+// TODO if performance is too slow, try regexes
 func rewriteLinks(r *http.Response) error {
 	doc, err := goquery.NewDocumentFromReader(r.Body)
 	if err != nil {
@@ -113,6 +115,22 @@ func rewriteLinks(r *http.Response) error {
 		}
 		el.SetAttr("src", resolveProxyURL(doc.Url, src))
 	})
+
+	//Forms
+	doc.Find("form").Each(func(i int, el *goquery.Selection) {
+		act, ok := el.Attr("action")
+		if !ok || act == "" {
+			return
+		}
+		el.SetAttr("action", resolveProxyURL(doc.Url, act))
+	})
+
+	// Add <base> tag set to original root so other paths are resolved
+	// correctly
+	if doc.Url != nil {
+		baseTag := fmt.Sprintf(`<base href="%s"/>`, doc.Url)
+		doc.Find("head").PrependHtml(baseTag)
+	}
 
 	// replace with modified body
 	html, err := doc.Html()
