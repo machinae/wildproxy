@@ -176,6 +176,10 @@ func rewriteLinks(r *http.Response) error {
 		return err
 	}
 
+	if len(r.Header.Get("Set-Cookie")) > 0 {
+		resolveCookies(r)
+	}
+
 	r.ContentLength = int64(len(html))
 	r.Header.Set("Content-Length", strconv.Itoa(len(html)))
 	r.Body = ioutil.NopCloser(strings.NewReader(html))
@@ -196,4 +200,28 @@ func resolveProxyURL(pageUrl *url.URL, rawUrl string) string {
 	// Resolve again from the proxy
 	nu = rootUrl.ResolveReference(&url.URL{Path: nu.String()})
 	return nu.String()
+}
+
+// Rewrites Set-Cookie header to scope cookies to the proxied path
+func resolveCookies(r *http.Response) {
+	var cookies []*http.Cookie
+	if r == nil || r.Request == nil || r.Request.URL == nil {
+		return
+	}
+	// namespace path
+	origin := r.Request.URL.Scheme + "://" + r.Request.URL.Host
+	for _, cookie := range r.Cookies() {
+		cookie.Domain = rootUrl.Host
+		cookie.Path = origin + cookie.Path
+		cookies = append(cookies, cookie)
+	}
+
+	// clear old set-cookie headers and set new ones
+	r.Header.Del("Set-Cookie")
+	// matches behavior of http.SetCookie
+	for _, cookie := range cookies {
+		if v := cookie.String(); v != "" {
+			r.Header.Add("Set-Cookie", v)
+		}
+	}
 }
