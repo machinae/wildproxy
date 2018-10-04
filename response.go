@@ -6,6 +6,7 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -20,13 +21,17 @@ func proxyResponse(r *http.Response) error {
 	removeSecHeaders(r)
 	setCorsHeaders(r)
 
-	// Only modify HTML responses
-	if !isHtml(r) {
+	resolveRedirect(r)
+
+	if r.Body == nil {
 		return nil
 	}
 
-	if err := rewriteLinks(r); err != nil {
-		return err
+	// Only modify HTML responses
+	if isHtml(r) {
+		if err := rewriteLinks(r); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -58,6 +63,16 @@ func setCorsHeaders(r *http.Response) {
 			r.Header.Set("Access-Control-Allow-Headers", rh)
 		}
 	}
+}
+
+// Resolve absolute URL in Location header
+func resolveRedirect(r *http.Response) {
+	loc := r.Header.Get("Location")
+	if loc == "" || r.Request == nil {
+		return
+	}
+	rdUrl := resolveProxyURL(r.Request.URL, loc)
+	r.Header.Set("Location", rdUrl)
 }
 
 func removeSecHeaders(r *http.Response) {
@@ -104,6 +119,8 @@ func rewriteLinks(r *http.Response) error {
 	if err != nil {
 		return err
 	}
+	r.ContentLength = int64(len(html))
+	r.Header.Set("Content-Length", strconv.Itoa(len(html)))
 	r.Body = ioutil.NopCloser(strings.NewReader(html))
 	return nil
 }
