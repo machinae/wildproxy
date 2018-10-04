@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime"
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -34,6 +37,9 @@ var injectScript = `
 })();
 `
 
+//regexp to match url() in stylesheets
+var cssRegex = regexp.MustCompile(`url\(['"]?(.+?)['"]?\)`)
+
 // Function that modifes the response
 // TODO deal with 301 redirects
 func proxyResponse(r *http.Response) error {
@@ -53,22 +59,27 @@ func proxyResponse(r *http.Response) error {
 		return nil
 	}
 
-	// Only modify HTML responses
-	if isHtml(r) {
+	// Modify URLs in HTML responses
+	if isContentType("text/html", r) {
+		defer r.Body.Close()
 		if err := rewriteLinks(r); err != nil {
 			return err
 		}
+	} else if isContentType("text/css", r) {
+		defer r.Body.Close()
+		br := rewriteStyleUrls(r.Request.URL, r.Body)
+		r.Body = ioutil.NopCloser(br)
 	}
 
 	return nil
 }
 
-// Parses content-type to determine if page is HTML
-func isHtml(r *http.Response) bool {
-	contentType := r.Header.Get("Content-Type")
-	ct, _, err := mime.ParseMediaType(contentType)
+// Parses content-type header, for example text/html
+func isContentType(contentType string, r *http.Response) bool {
+	ctValue := r.Header.Get("Content-Type")
+	ct, _, err := mime.ParseMediaType(ctValue)
 	// TODO sniff content-type from body
-	if err == nil && ct == "text/html" {
+	if err == nil && ct == contentType {
 		return true
 	}
 	return false
@@ -115,13 +126,13 @@ func removeSecHeaders(r *http.Response) {
 
 // Returns a new body with absolute urls in <a> and <script> tags changed to
 // relative URLs from the proxy
+// Does not close body
 // TODO if performance is too slow, try regexes
 func rewriteLinks(r *http.Response) error {
 	doc, err := goquery.NewDocumentFromReader(r.Body)
 	if err != nil {
 		return err
 	}
-	r.Body.Close()
 	if r.Request != nil {
 		doc.Url = r.Request.URL
 	}
@@ -151,6 +162,16 @@ func rewriteLinks(r *http.Response) error {
 			return
 		}
 		el.SetAttr("action", resolveProxyURL(doc.Url, act))
+	})
+
+	// Inline style tags
+	doc.Find("style").Each(func(i int, el *goquery.Selection) {
+		css := strings.NewReader(el.Text())
+		r := rewriteStyleUrls(doc.Url, css)
+		newCss, err := ioutil.ReadAll(r)
+		if err == nil && len(newCss) > 0 {
+			el.SetText(string(newCss))
+		}
 	})
 
 	// HTML Head
@@ -185,6 +206,23 @@ func rewriteLinks(r *http.Response) error {
 	r.Header.Set("Content-Length", strconv.Itoa(len(html)))
 	r.Body = ioutil.NopCloser(strings.NewReader(html))
 	return nil
+}
+
+// Resolve url('..') in stylesheets
+func rewriteStyleUrls(baseUrl *url.URL, r io.Reader) io.Reader {
+	css, err := ioutil.ReadAll(r)
+	if err != nil {
+		return bytes.NewReader(css)
+	}
+	newCss := ReplaceAllStringSubmatchFunc(cssRegex, string(css), func(matches []string) string {
+		if len(matches) < 2 {
+			return ""
+		}
+		urlString := matches[1]
+		resolvedUrl := resolveProxyURL(baseUrl, urlString)
+		return strings.Replace(matches[0], matches[1], resolvedUrl, 1)
+	})
+	return strings.NewReader(newCss)
 }
 
 // convert a URL to relative from the proxy
@@ -233,4 +271,22 @@ func resolveCookies(r *http.Response) {
 			r.Header.Add("Set-Cookie", v)
 		}
 	}
+}
+
+// http://elliot.land/post/go-replace-string-with-regular-expression-callback
+func ReplaceAllStringSubmatchFunc(re *regexp.Regexp, str string, repl func([]string) string) string {
+	result := ""
+	lastIndex := 0
+
+	for _, v := range re.FindAllSubmatchIndex([]byte(str), -1) {
+		groups := []string{}
+		for i := 0; i < len(v); i += 2 {
+			groups = append(groups, str[v[i]:v[i+1]])
+		}
+
+		result += str[lastIndex:v[0]] + repl(groups)
+		lastIndex = v[1]
+	}
+
+	return result + str[lastIndex:]
 }

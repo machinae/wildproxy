@@ -69,3 +69,29 @@ func TestProxyResponse(t *testing.T) {
 	assert.Contains(body, `<script src="/https://cdn.example.com/scripts/script.js">`)
 
 }
+
+func TestParseCSS(t *testing.T) {
+	assert := assert.New(t)
+	rootUrl = &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
+	pageUrl := &url.URL{Scheme: "http", Host: "www.example.com", Path: "/"}
+
+	style := `
+	@font-face {
+		font-family:'DDG_ProximaNova';
+		src:url("font/ProximaNova-Sbold-webfont.eot");
+		src:url(font/ProximaNova-Sbold-webfont.eot?#iefix)
+		font-weight:600;
+		font-style:normal
+	}
+	`
+
+	r := strings.NewReader(style)
+	out := rewriteStyleUrls(pageUrl, r)
+
+	newCss, err := ioutil.ReadAll(out)
+	assert.NoError(err)
+
+	outStr := string(newCss)
+
+	assert.Contains(outStr, `src:url("http://localhost/http://www.example.com/font/ProximaNova-Sbold-webfont.eot");`)
+}
