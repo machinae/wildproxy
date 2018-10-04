@@ -125,12 +125,23 @@ func rewriteLinks(r *http.Response) error {
 		el.SetAttr("action", resolveProxyURL(doc.Url, act))
 	})
 
+	// HTML Head
+	headEl := doc.Find("head")
+	if headEl == nil {
+		doc.Append("head")
+		headEl = doc.Find("head")
+	}
+
 	// Add <base> tag set to original root so other paths are resolved
 	// correctly
 	if doc.Url != nil {
 		baseTag := fmt.Sprintf(`<base href="%s"/>`, doc.Url)
-		doc.Find("head").PrependHtml(baseTag)
+		headEl.PrependHtml(baseTag)
 	}
+
+	// Add dummy favicon to prevent requests to favicon.ico
+	faviconTag := `<link rel="icon" href="data:,">`
+	headEl.AppendHtml(faviconTag)
 
 	// replace with modified body
 	html, err := doc.Html()
@@ -152,7 +163,9 @@ func resolveProxyURL(pageUrl *url.URL, rawUrl string) string {
 	if err != nil {
 		return rawUrl
 	}
-	// convert to absolute
+	// Resolve absolute URL for the page
 	nu := pageUrl.ResolveReference(u)
-	return "/" + nu.String()
+	// Resolve again from the proxy
+	nu = rootUrl.ResolveReference(&url.URL{Path: nu.String()})
+	return nu.String()
 }

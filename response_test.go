@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -31,6 +32,8 @@ var testPage = `
 
 func TestProxyResponse(t *testing.T) {
 	assert := assert.New(t)
+
+	rootUrl = &url.URL{Path: "/"}
 
 	req, _ := http.NewRequest("GET", "https://www.example.com/page/0", nil)
 
