@@ -41,4 +41,7 @@ func proxyRequest(req *http.Request) {
 func setOutHeaders(req *http.Request) {
 	req.Header.Set("X-Forwarded-Proto", req.URL.Scheme)
 	req.Header.Set("X-Forwarded-Host", req.Host)
+
+	// set by transport
+	req.Header.Del("Accept-Encoding")
 }
