@@ -44,4 +44,24 @@ func setOutHeaders(req *http.Request) {
 
 	// set by transport
 	req.Header.Del("Accept-Encoding")
+
+	urlHeaders := []string{"Referer", "Origin"}
+	for _, name := range urlHeaders {
+		trimRootUrl(name, req)
+	}
+
+}
+
+// Strips off root URL from headers like Referer
+func trimRootUrl(name string, req *http.Request) {
+	hv := req.Header.Get(name)
+	if hv == "" {
+		return
+	}
+	rootPath := rootUrl.String()
+	if !strings.HasSuffix(rootPath, "/") {
+		rootPath += "/"
+	}
+	hv = strings.TrimPrefix(hv, rootPath)
+	req.Header.Set(name, hv)
 }
