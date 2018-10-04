@@ -81,6 +81,9 @@ func removeSecHeaders(r *http.Response) {
 	r.Header.Del("Content-Security-Policy")
 	r.Header.Del("Content-Security-Policy-Report-Only")
 
+	// Disable HSTS
+	r.Header.Del("Strict-Transport-Security")
+
 	r.Header.Del("X-Frame-Options")
 
 }
@@ -148,6 +151,8 @@ func rewriteLinks(r *http.Response) error {
 	if err != nil {
 		return err
 	}
+	// Drop gzip headers
+	r.Header.Del("Content-Encoding")
 	r.ContentLength = int64(len(html))
 	r.Header.Set("Content-Length", strconv.Itoa(len(html)))
 	r.Body = ioutil.NopCloser(strings.NewReader(html))
