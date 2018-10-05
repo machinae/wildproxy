@@ -27,6 +27,15 @@ var (
 
 	// Anonymous proxy mode
 	anonMode bool
+
+	// Add cors headers to responses
+	corsHeaders bool
+
+	// Remove security headers
+	secHeaders bool
+
+	// Proxy all links, not just scripts and css
+	rewriteAll bool
 )
 
 var (
@@ -41,6 +50,9 @@ func init() {
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	flag.BoolVar(&debug, "debug", false, "Dump outoging requests to debug")
 	flag.BoolVar(&anonMode, "anon", false, "Strip proxy headers like X-Forwarded-For that leak user data")
+	flag.BoolVar(&corsHeaders, "cors", true, "Add CORS headers to responses")
+	flag.BoolVar(&secHeaders, "csp", true, "Strip content security and frame headers from responses")
+	flag.BoolVarP(&rewriteAll, "all", "a", false, "Proxy all resources, not just HTML, scripts and stylesheets")
 }
 
 func main() {
@@ -59,6 +71,8 @@ func main() {
 	} else {
 		log.SetLevel(log.WarnLevel)
 	}
+
+	compileSelectors()
 
 	log.Printf("Starting server on %s", httpHost)
 	log.Printf("Proxying requests to %s/*", rootUrl)

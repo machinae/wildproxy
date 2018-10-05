@@ -15,10 +15,36 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/andybalholm/cascadia"
 )
 
-//regexp to match url() in stylesheets
-var cssRegex = regexp.MustCompile(`url\(['"]?(.+?)['"]?\)`)
+var (
+	//regexp to match url() in stylesheets
+	cssRegex *regexp.Regexp
+
+	// CSS selector for attributes with href attribute to rewrite
+	hrefSelector goquery.Matcher
+	// CSS selector for attributes with src attribute to rewrite
+	srcSelector  goquery.Matcher
+	formSelector goquery.Matcher
+	// Selector for inline style tags
+	styleSelector goquery.Matcher
+)
+
+func compileSelectors() {
+	cssRegex = regexp.MustCompile(`url\(['"]?(.+?)['"]?\)`)
+
+	hrefSelector = cascadia.MustCompile("a,link")
+
+	if rewriteAll {
+		srcSelector = cascadia.MustCompile("[src]")
+	} else {
+		srcSelector = cascadia.MustCompile("script")
+	}
+
+	formSelector = cascadia.MustCompile("form[action]")
+	styleSelector = cascadia.MustCompile("style")
+}
 
 // Function that modifes the response
 // TODO deal with 301 redirects
@@ -26,8 +52,14 @@ func proxyResponse(r *http.Response) error {
 	if r == nil {
 		return errors.New("Content is empty")
 	}
-	removeSecHeaders(r)
-	setCorsHeaders(r)
+
+	if secHeaders {
+		removeSecHeaders(r)
+	}
+
+	if corsHeaders {
+		setCorsHeaders(r)
+	}
 
 	resolveRedirect(r)
 
@@ -125,7 +157,7 @@ func rewriteLinks(r *http.Response) error {
 	}
 
 	// Replace links and styles href
-	doc.Find("a,link").Each(func(i int, el *goquery.Selection) {
+	doc.FindMatcher(hrefSelector).Each(func(i int, el *goquery.Selection) {
 		href, ok := el.Attr("href")
 		if !ok {
 			return
@@ -134,7 +166,7 @@ func rewriteLinks(r *http.Response) error {
 	})
 
 	// Replace script src
-	doc.Find("script").Each(func(i int, el *goquery.Selection) {
+	doc.FindMatcher(srcSelector).Each(func(i int, el *goquery.Selection) {
 		src, ok := el.Attr("src")
 		if !ok {
 			return
@@ -143,7 +175,7 @@ func rewriteLinks(r *http.Response) error {
 	})
 
 	//Forms
-	doc.Find("form").Each(func(i int, el *goquery.Selection) {
+	doc.FindMatcher(formSelector).Each(func(i int, el *goquery.Selection) {
 		act, ok := el.Attr("action")
 		if !ok || act == "" {
 			return
@@ -152,7 +184,7 @@ func rewriteLinks(r *http.Response) error {
 	})
 
 	// Inline style tags
-	doc.Find("style").Each(func(i int, el *goquery.Selection) {
+	doc.FindMatcher(styleSelector).Each(func(i int, el *goquery.Selection) {
 		css := strings.NewReader(el.Text())
 		r := rewriteStyleUrls(doc.Url, css)
 		newCss, err := ioutil.ReadAll(r)
@@ -170,7 +202,7 @@ func rewriteLinks(r *http.Response) error {
 
 	// Add <base> tag set to original root so other paths are resolved
 	// correctly
-	if doc.Url != nil {
+	if doc.Url != nil && !rewriteAll {
 		baseTag := fmt.Sprintf(`<base href="%s"/>`, doc.Url)
 		headEl.PrependHtml(baseTag)
 	}
