@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -18,7 +17,7 @@ type LoggingTransport struct {
 
 func (tr *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if tr.RoundTripper == nil {
-		return nil, errors.New("Underlying transport is nil")
+		tr.RoundTripper = &http.Transport{}
 	}
 	rawReq, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
@@ -36,7 +35,7 @@ type SafeTransport struct {
 
 func (tr *SafeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if tr.RoundTripper == nil {
-		return nil, errors.New("Underlying transport is nil")
+		tr.RoundTripper = &http.Transport{}
 	}
 	// Prevent request loops by checking Via header
 	// https://blog.cloudflare.com/preventing-malicious-request-loops/
@@ -45,5 +44,34 @@ func (tr *SafeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	req.Header.Set("Via", "1.1 "+proxyName)
 
+	return tr.RoundTripper.RoundTrip(req)
+}
+
+// Transport that strips proxy headers like X-Forward-*
+type AnonTransport struct {
+	http.RoundTripper
+}
+
+func (tr *AnonTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if tr.RoundTripper == nil {
+		tr.RoundTripper = &http.Transport{}
+	}
+
+	stripHeaders := []string{
+		"Forwarded",
+		"X-Forwarded-For",
+		"X-Forwarded-Proto",
+		"X-Forwarded-Host",
+		"Via",
+		// Cloudflare
+		"CF-Connecting-IP",
+		"CF-Ipcountry",
+		"CF-Visitor",
+		"True-Client-IP",
+	}
+
+	for _, h := range stripHeaders {
+		req.Header.Del(h)
+	}
 	return tr.RoundTripper.RoundTrip(req)
 }

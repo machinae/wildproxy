@@ -24,6 +24,9 @@ var (
 
 	// Dump outgoing requests
 	debug bool
+
+	// Anonymous proxy mode
+	anonMode bool
 )
 
 var (
@@ -37,6 +40,7 @@ func init() {
 	flag.DurationVarP(&clientTimeout, "client-timeout", "T", 60*time.Second, "Timeout for requests from clients to this server")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	flag.BoolVar(&debug, "debug", false, "Dump outoging requests to debug")
+	flag.BoolVar(&anonMode, "anon", false, "Strip proxy headers like X-Forwarded-For that leak user data")
 }
 
 func main() {
