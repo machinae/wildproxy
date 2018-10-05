@@ -35,6 +35,9 @@ type SafeTransport struct {
 }
 
 func (tr *SafeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if tr.RoundTripper == nil {
+		return nil, errors.New("Underlying transport is nil")
+	}
 	// Prevent request loops by checking Via header
 	// https://blog.cloudflare.com/preventing-malicious-request-loops/
 	if strings.Contains(req.Header.Get("Via"), proxyName) {
