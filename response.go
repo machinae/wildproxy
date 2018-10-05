@@ -175,13 +175,9 @@ func rewriteLinks(r *http.Response) error {
 		headEl.PrependHtml(baseTag)
 	}
 
-	// Add dummy favicon to prevent requests to favicon.ico
-	faviconTag := `<link rel="icon" href="data:,">`
-	headEl.AppendHtml(faviconTag)
-
 	// Inject script
 	scriptTag := fmt.Sprintf("<script>%s</script>", injectScript)
-	headEl.AppendHtml(scriptTag)
+	headEl.PrependHtml(scriptTag)
 
 	// replace with modified body
 	html, err := doc.Html()
