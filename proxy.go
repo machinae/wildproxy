@@ -35,9 +35,13 @@ func newProxy() *httputil.ReverseProxy {
 	tr = &http.Transport{
 		DialContext: dialer.DialContext,
 	}
+
 	if log.IsLevelEnabled(log.DebugLevel) {
 		tr = &LoggingTransport{tr}
 	}
+
+	tr = &SafeTransport{tr}
+
 	return &httputil.ReverseProxy{
 		Director:       proxyRequest,
 		ModifyResponse: proxyResponse,
