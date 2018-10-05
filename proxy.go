@@ -1,10 +1,11 @@
 package main
 
 import (
-	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var (

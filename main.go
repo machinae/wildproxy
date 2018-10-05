@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
 	"net/url"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	flag "github.com/spf13/pflag"
 )
@@ -20,6 +21,9 @@ var (
 
 	// Verbose output
 	verbose bool
+
+	// Dump outgoing requests
+	debug bool
 )
 
 var (
@@ -32,6 +36,7 @@ func init() {
 	flag.DurationVarP(&upstreamTimeout, "upstream-timeout", "t", 60*time.Second, "Timeout for requests to upstream servers")
 	flag.DurationVarP(&clientTimeout, "client-timeout", "T", 60*time.Second, "Timeout for requests from clients to this server")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
+	flag.BoolVar(&debug, "debug", false, "Dump outoging requests to debug")
 }
 
 func main() {
@@ -41,6 +46,14 @@ func main() {
 	rootUrl, err = url.Parse(webRoot)
 	if err != nil || rootUrl.Host == "" {
 		log.Fatal("Root URL specified with -r must be an absolute URL like http://proxy.example.com")
+	}
+
+	if debug {
+		log.SetLevel(log.DebugLevel)
+	} else if verbose {
+		log.SetLevel(log.InfoLevel)
+	} else {
+		log.SetLevel(log.WarnLevel)
 	}
 
 	log.Printf("Starting server on %s", httpHost)

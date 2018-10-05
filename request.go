@@ -1,10 +1,11 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Function that modifes the request
@@ -24,7 +25,7 @@ func proxyRequest(req *http.Request) {
 
 	u, err := url.Parse(targetUrl)
 	if err != nil {
-		log.Printf("Request URL error: %s\n", err)
+		log.Errorf("Request URL error: %s\n", err)
 		return
 	}
 
@@ -33,9 +34,7 @@ func proxyRequest(req *http.Request) {
 
 	setOutHeaders(req)
 
-	if verbose {
-		log.Printf("Proxying request to %s", req.URL)
-	}
+	log.Infof("Proxying request to %s", req.URL)
 }
 
 func setOutHeaders(req *http.Request) {
