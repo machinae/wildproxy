@@ -27,15 +27,20 @@ func StartServer() {
 }
 
 func newProxy() *httputil.ReverseProxy {
+	var tr http.RoundTripper
 	dialer := &net.Dialer{
 		Timeout:   upstreamTimeout,
 		KeepAlive: upstreamTimeout,
 	}
+	tr = &http.Transport{
+		DialContext: dialer.DialContext,
+	}
+	if log.IsLevelEnabled(log.DebugLevel) {
+		tr = &LoggingTransport{tr}
+	}
 	return &httputil.ReverseProxy{
 		Director:       proxyRequest,
 		ModifyResponse: proxyResponse,
-		Transport: &http.Transport{
-			DialContext: dialer.DialContext,
-		},
+		Transport:      tr,
 	}
 }
