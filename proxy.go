@@ -40,6 +40,10 @@ func newProxy() *httputil.ReverseProxy {
 		tr = &LoggingTransport{tr}
 	}
 
+	if anonMode {
+		tr = &AnonTransport{tr}
+	}
+
 	tr = &SafeTransport{tr}
 
 	return &httputil.ReverseProxy{
