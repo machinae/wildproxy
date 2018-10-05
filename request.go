@@ -13,8 +13,7 @@ import (
 // http://www.example.com/https://www.upstream.com/foo/bar
 // TODO support http scheme?
 func proxyRequest(req *http.Request) {
-	path := strings.TrimPrefix(req.URL.Path, "/")
-	targetUrl := strings.ToLower(path)
+	targetUrl := strings.TrimPrefix(req.URL.Path, "/")
 	if len(req.URL.RawQuery) > 0 {
 		targetUrl += "?" + req.URL.RawQuery
 	}
