@@ -7,14 +7,31 @@
   // Source: https://stackoverflow.com/questions/5202296/add-a-hook-to-all-ajax-requests-on-a-page
   // TODO look into relative urls in scripts like rel2abs
   // TODO support fetch API
-  var origin = window.location.protocol + '//' + window.location.host;
+  var origin = window.location.origin || (window.location.protocol + '//' + window.location.host + (window.location.port ? ':' + window.location.port : ''));
+
   var open = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function() {
     var args = [].slice.call(arguments);
-    var targetOrigin = /^https?:\/\/([^\/]+)/i.exec(args[1]);
-    if (targetOrigin && targetOrigin[0].toLowerCase() !== origin) {
-      args[1] = origin + '/' + args[1];
-    }
+    args[1] = prependOrigin(args[1]);
     return open.apply(this, args);
   };
+
+  // Monkey patch jQuery.ajax if it exists
+  if (window.jQuery) {
+    window.jQuery.ajaxPrefilter(function(options) {
+      options.url = prependOrigin(options.url)
+      if (options.crossDomain) {
+        options.crossDomain = false;
+      }
+    });
+  }
+
+  // prepend origin(proxy url) to the given URL if is a cross-domain URL
+  var prependOrigin = function(reqUrl) {
+    var targetOrigin = /^https?:\/\/([^\/]+)/i.exec(reqUrl);
+    if (targetOrigin && targetOrigin.length && targetOrigin[0].toLowerCase() !== origin) {
+      reqUrl = origin + '/' + reqUrl;
+    }
+    return reqUrl;
+  }
 })();

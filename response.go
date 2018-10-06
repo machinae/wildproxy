@@ -202,7 +202,7 @@ func rewriteLinks(r *http.Response) error {
 
 	// Add <base> tag set to original root so other paths are resolved
 	// correctly
-	if doc.Url != nil && !rewriteAll {
+	if doc.Url != nil {
 		baseTag := fmt.Sprintf(`<base href="%s"/>`, doc.Url)
 		headEl.PrependHtml(baseTag)
 	}
