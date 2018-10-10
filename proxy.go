@@ -56,6 +56,11 @@ func newProxy() *httputil.ReverseProxy {
 // Middleware to filter incoming requests before they are sent to the proxy
 func filterRequest(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Special case write 200 for /health endpoint
+		if r.URL.EscapedPath() == "/health" {
+			w.WriteHeader(200)
+			return
+		}
 		// Return 204 for favicon requests
 		if isFavicon(r) {
 			w.WriteHeader(204)
