@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wildproxy Demo</title>
+<style type="text/css">
+.content {
+ margin: 30px auto; 
+}
+#proxy-frame {
+  width: 100%;
+  min-height: 100vh;
+}
+</style>
+</head>
+<body>
+  <div class="content">
+    <h1>Wildproxy Demo</h1>
+    <p>This page proxies the URL entered below through your Wildproxy server.
+    Start the wildproxy CLI, enter a page URL below and click
+    <strong>Go</strong>.</p>
+    <div class="controls">
+        <label for="wildproxy-url">Wildproxy server</label>
+        <input type="text" id="wildproxy-url" required value="http://localhost:8080"/>
+        <label for="page-url">Page to Visit</label>
+        <input type="text" id="page-url" required
+        value="http://www.example.com/"/>
+        <button type="button" onclick="navigate()">Go</button>
+      <p>
+        <code id="full-url"></code>
+      </p>
+    </div>
+
+    <hr />
+
+    <div class="page">
+      <iframe id="proxy-frame" frameborder="0"></iframe>
+    </div>
+  </div>
+  
+  <script>
+    function navigate() {
+
+      var proxyURL = document.getElementById('wildproxy-url').value;
+      var pageURL = document.getElementById('page-url').value;
+
+      var fullURL = proxyURL + '/' + pageURL;
+      document.getElementById('full-url').innerText = fullURL;
+
+      var pageFrm = document.getElementById('proxy-frame');
+      pageFrm.src = fullURL;
+
+      return false;
+    }
+  </script>
+</body>
+</html>
