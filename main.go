@@ -43,7 +43,7 @@ var (
 )
 
 func init() {
-	flag.StringVarP(&httpHost, "host", "h", ":8080", "Host to run HTTP server on")
+	flag.StringVarP(&httpHost, "host", "h", "localhost:8080", "Host to run HTTP server on")
 	flag.StringVarP(&webRoot, "root", "r", "", "Web root the proxy will be available at, prepended to all URLs")
 	flag.DurationVarP(&upstreamTimeout, "upstream-timeout", "t", 60*time.Second, "Timeout for requests to upstream servers")
 	flag.DurationVarP(&clientTimeout, "client-timeout", "T", 60*time.Second, "Timeout for requests from clients to this server")
@@ -58,6 +58,10 @@ func init() {
 func main() {
 	var err error
 	flag.Parse()
+
+	if webRoot == "" {
+		webRoot = "http://" + httpHost
+	}
 
 	rootUrl, err = url.Parse(webRoot)
 	if err != nil || rootUrl.Host == "" {
