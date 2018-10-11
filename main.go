@@ -9,6 +9,8 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+const version = "0.1.0"
+
 // Flags
 var (
 	httpHost string
