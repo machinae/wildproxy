@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/url"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -61,8 +62,14 @@ func main() {
 	var err error
 	flag.Parse()
 
+	// default to listen address
 	if webRoot == "" {
-		webRoot = "http://" + httpHost
+		webHost := httpHost
+		// empty host
+		if strings.HasPrefix(webHost, ":") {
+			webHost = "localhost" + webHost
+		}
+		webRoot = "http://" + webHost
 	}
 
 	rootUrl, err = url.Parse(webRoot)
