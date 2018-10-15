@@ -70,7 +70,7 @@ func filterRequest(h http.Handler) http.Handler {
 		case "/wildproxy.js":
 			// injected javascript
 			w.Header().Set("Content-Type", "application/javascript")
-			w.Write(injectScript)
+			http.ServeFile(w, r, scriptFile)
 		default:
 			// request is valid, proxy it
 			h.ServeHTTP(w, r)

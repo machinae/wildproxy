@@ -208,8 +208,10 @@ func rewriteLinks(r *http.Response) error {
 	}
 
 	// Inject script
-	scriptTag := fmt.Sprintf(`<script src="/wildproxy.js"></script>`)
-	headEl.PrependHtml(scriptTag)
+	if scriptFile != "" {
+		scriptTag := fmt.Sprintf(`<script src="/wildproxy.js"></script>`)
+		headEl.PrependHtml(scriptTag)
+	}
 
 	// replace with modified body
 	html, err := doc.Html()

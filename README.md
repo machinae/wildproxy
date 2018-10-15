@@ -56,6 +56,7 @@ Configuration is done through command-line flags.
 
 ```sh
 $ wildproxy --help
+
 Usage of wildproxy:
   -a, --all                         Proxy all resources, not just HTML, scripts and stylesheets
       --anon                        Strip proxy headers like X-Forwarded-For that leak user data
@@ -63,8 +64,9 @@ Usage of wildproxy:
       --cors                        Add CORS headers to responses (default true)
       --csp                         Strip content security and frame headers from responses (default true)
       --debug                       Dump outoging requests to debug
-  -h, --host string                 Host to run HTTP server on (default ":8080")
+  -h, --host string                 Host to run HTTP server on (default "localhost:8080")
   -r, --root string                 Web root the proxy will be available at, prepended to all URLs
+  -s, --script string               Path to Javascript file to inject in every page (default "./wildproxy.js")
   -t, --upstream-timeout duration   Timeout for requests to upstream servers (default 1m0s)
   -v, --verbose                     Verbose output
 

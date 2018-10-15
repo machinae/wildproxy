@@ -1,7 +1,3 @@
-package main
-
-// Javascript to inject into the page
-var injectScript = []byte(`
 //Javascript automatically injected in every page
 
 (function() {
@@ -38,4 +34,3 @@ var injectScript = []byte(`
     return reqUrl;
   }
 })();
-`)
