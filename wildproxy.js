@@ -33,4 +33,22 @@
     }
     return reqUrl;
   }
+
+  /**
+   * Wraps function in try/catch for bypassing errors and application crashes
+   * @param {Function} func Function for wrap
+   * @returns {Function} Wrapper function
+   */
+  var silentWrap = function(func) {
+    return function () {
+      try {
+        func.apply(this, arguments)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+
+  window.history.pushState = silentWrap(window.history.pushState)
+  window.history.replaceState = silentWrap(window.history.replaceState)
 })();
