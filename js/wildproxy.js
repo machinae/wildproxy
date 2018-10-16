@@ -41,32 +41,21 @@
     return reqUrl;
   }
 
-  const normalizeRelativePath = (path) => {
-    if (!/^https?/.test(path.replace(`${origin}/`, ''))) {
-      return path.replace(origin, '')
-    }
-
-    return path
-  }
-
   /**
    * Wraps function in try/catch for bypassing errors and application crashes
    * @param {Function} func Function for wrap
    * @returns {Function} Wrapper function
    */
-  const silentWrapper = (func) => (...args) => {
-    try {
-      return func(...args)
-    } catch (err) {
-      console.warn(err)
+  var silentWrap = function(func) {
+    return function () {
+      try {
+        func.apply(this, arguments)
+      } catch (err) {
+        console.error(err)
+      }
     }
   }
 
-  /**
-   * History API CORS errors stubbing with window monkey patching
-   */
-  if (window.history) {
-    window.history.pushState = silentWrapper(window.history.pushState)
-    window.history.replaceState = silentWrapper(window.history.replaceState)
-  }
+  window.history.pushState = silentWrap(window.history.pushState)
+  window.history.replaceState = silentWrap(window.history.replaceState)
 })();
