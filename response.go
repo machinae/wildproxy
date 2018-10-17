@@ -213,7 +213,7 @@ func rewriteLinks(r *http.Response) error {
 
 	// Inject script
 	if scriptFile != "" {
-		scriptTag := fmt.Sprintf(`<script src="/wildproxy.js"></script>`)
+		scriptTag := fmt.Sprintf(`<script src="/build/wildproxy.min.js"></script>`)
 		headEl.PrependHtml(scriptTag)
 	}
 

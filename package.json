@@ -1,0 +1,37 @@
+{
+  "name": "wildproxy",
+  "version": "1.0.0",
+  "repository": "git@github.com:machinae/wildproxy.git",
+  "author": "machinae",
+  "license": "MIT",
+  "scripts": {
+    "transpile": "babel js/wildproxy.js --out-dir build",
+    "minify": "uglifyjs build/wildproxy.js -o build/wildproxy.min.js -c -m",
+    "build": "rimraf build && npm run transpile && npm run minify"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run build && lint-staged"
+    }
+  },
+  "lint-staged": {
+    "build/*.js": ["git add"]
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env",
+      {}
+    ]
+  },
+  "browserslist": "last 2 versions, not ie <= 8",
+  "devDependencies": {
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "@babel/preset-env": "^7.1.0",
+    "husky": "^1.1.2",
+    "lint-staged": "^7.3.0",
+    "rimraf": "^2.6.2",
+    "uglify-js": "^3.4.9"
+  }
+}
