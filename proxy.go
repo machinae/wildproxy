@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"regexp"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -56,10 +58,14 @@ func newProxy() *httputil.ReverseProxy {
 
 // Middleware to filter incoming requests before they are sent to the proxy
 func filterRequest(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	proxyHostRegexp, _ := regexp.Compile("^https?://" + httpHost + "/")
+	absoluteRequestRegexp, _ := regexp.Compile("^/(https?|www)")
 
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// simple hardcoded routing
-		switch r.URL.EscapedPath() {
+		requestUrl := r.URL.EscapedPath()
+
+		switch requestUrl {
 		case "/":
 			fmt.Fprintf(w, "Wildproxy %s\nhttps://github.com/machinae/wildproxy\n", version)
 		case "/health":
@@ -72,8 +78,16 @@ func filterRequest(h http.Handler) http.Handler {
 			w.Header().Set("Content-Type", "application/javascript")
 			http.ServeFile(w, r, scriptFile)
 		default:
-			// request is valid, proxy it
-			h.ServeHTTP(w, r)
+			if absoluteRequestRegexp.MatchString(requestUrl) {
+				// request is valid, proxy it
+				h.ServeHTTP(w, r)
+			} else {
+				// handle relative requests
+				refererUrl := strings.TrimRight(r.Header.Get("Referer"), "/")
+				originUrl := proxyHostRegexp.ReplaceAllString(refererUrl, "")
+
+				http.Redirect(w, r, originUrl+requestUrl, http.StatusSeeOther)
+			}
 		}
 	})
 }
