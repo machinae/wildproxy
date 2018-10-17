@@ -2,9 +2,6 @@
 
 //Javascript automatically injected in every page
 (function () {
-  var _this = this,
-      _arguments = arguments;
-
   // Monkey patches XHR to proxy URLs
   // Source: https://github.com/Rob--W/cors-anywhere
   // Source: https://stackoverflow.com/questions/5202296/add-a-hook-to-all-ajax-requests-on-a-page
@@ -14,9 +11,9 @@
   var open = XMLHttpRequest.prototype.open;
 
   XMLHttpRequest.prototype.open = function () {
-    var args = [].slice.call(_arguments);
+    var args = [].slice.call(arguments);
     args[1] = prependOrigin(args[1]);
-    return open.apply(_this, args);
+    return open.apply(this, args);
   }; // Monkey patch jQuery.ajax if it exists
 
 
