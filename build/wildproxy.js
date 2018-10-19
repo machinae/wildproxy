@@ -1,18 +1,19 @@
 "use strict";
 
-//Javascript automatically injected in every page
+// Javascript automatically injected in every page as inline script
 (function () {
   // Monkey patches XHR to proxy URLs
   // Source: https://github.com/Rob--W/cors-anywhere
   // Source: https://stackoverflow.com/questions/5202296/add-a-hook-to-all-ajax-requests-on-a-page
-  // TODO look into relative urls in scripts like rel2abs
   // TODO support fetch API
   var origin = window.location.origin || window.location.protocol + '//' + window.location.host + (window.location.port ? ':' + window.location.port : '');
+  var targetURL = /^\/(https?:\/\/)?(w{3})?[a-z-\.]+/.exec(window.location.pathname)[0].replace(/^\//, '');
   var open = XMLHttpRequest.prototype.open;
 
   XMLHttpRequest.prototype.open = function () {
     var args = [].slice.call(arguments);
     args[1] = prependOrigin(args[1]);
+    args[1] = normalizeRelativePath(args[1]);
     return open.apply(this, args);
   }; // Monkey patch jQuery.ajax if it exists
 
@@ -37,29 +38,12 @@
 
     return reqUrl;
   };
-  /**
-   * Wraps function in try/catch for bypassing errors and application crashes
-   * @param {Function} func Function for wrap
-   * @returns {Function} Wrapper function
-   */
 
+  var normalizeRelativePath = function normalizeRelativePath(path) {
+    if (!/^https?/.test(path.replace("".concat(origin, "/"), ''))) {
+      return path.replace(origin, '');
+    }
 
-  var silentWrapper = function silentWrapper(func) {
-    return function () {
-      try {
-        return func.apply(void 0, arguments);
-      } catch (err) {
-        console.error(err);
-      }
-    };
+    return path;
   };
-  /**
-   * History API CORS errors stubbing with window monkey patching
-   */
-
-
-  if (window.history) {
-    window.history.pushState = silentWrapper(window.history.pushState);
-    window.history.replaceState = silentWrapper(window.history.replaceState);
-  }
 })();

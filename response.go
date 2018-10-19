@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime"
 	"net"
 	"net/http"
@@ -213,8 +214,18 @@ func rewriteLinks(r *http.Response) error {
 
 	// Inject script
 	if scriptFile != "" {
-		scriptTag := fmt.Sprintf(`<script src="/build/wildproxy.min.js"></script>`)
-		headEl.PrependHtml(scriptTag)
+		var scriptContent string
+		b, err := ioutil.ReadFile(scriptFile)
+
+		if err != nil {
+			scriptContent = ""
+			log.Panic("Script file is not readed! Reason:")
+			log.Panic(err)
+		} else {
+			scriptContent = string(b)
+			scriptTag := fmt.Sprintf("<script>" + scriptContent + "</script>")
+			headEl.PrependHtml(scriptTag)
+		}
 	}
 
 	// replace with modified body
