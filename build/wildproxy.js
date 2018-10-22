@@ -46,4 +46,29 @@
 
     return path;
   };
+  /**
+   * Wraps function in try/catch for bypassing errors and application crashes
+   * @param {Function} func Function for wrap
+   * @returns {Function} Wrapper function
+   */
+
+
+  var silentWrapper = function silentWrapper(func) {
+    return function () {
+      try {
+        return func.apply(void 0, arguments);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+  };
+  /**
+   * History API CORS errors stubbing with window monkey patching
+   */
+
+
+  if (window.history) {
+    window.history.pushState = silentWrapper(window.history.pushState);
+    window.history.replaceState = silentWrapper(window.history.replaceState);
+  }
 })();
