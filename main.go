@@ -3,11 +3,12 @@ package main
 import (
 	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-
 	flag "github.com/spf13/pflag"
 )
 
@@ -52,7 +53,7 @@ var (
 func init() {
 	flag.StringVarP(&httpHost, "host", "h", "localhost:8080", "Host to run HTTP server on")
 	flag.StringVarP(&webRoot, "root", "r", "", "Web root the proxy will be available at, prepended to all URLs")
-	flag.StringVarP(&scriptFile, "script", "s", "./wildproxy.js", "Path to Javascript file to inject in every page")
+	flag.StringVarP(&scriptFile, "script", "s", "", "Path to Javascript file to inject in every page")
 	flag.DurationVarP(&upstreamTimeout, "upstream-timeout", "t", 60*time.Second, "Timeout for requests to upstream servers")
 	flag.DurationVarP(&clientTimeout, "client-timeout", "T", 60*time.Second, "Timeout for requests from clients to this server")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
@@ -61,6 +62,17 @@ func init() {
 	flag.BoolVar(&corsHeaders, "cors", true, "Add CORS headers to responses")
 	flag.BoolVar(&secHeaders, "csp", true, "Strip content security and frame headers from responses")
 	flag.BoolVarP(&rewriteAll, "all", "a", false, "Proxy all resources, not just HTML, scripts and stylesheets")
+}
+
+func getActualScriptFilePath() string {
+	if scriptFile != "" {
+		return scriptFile
+	}
+
+	_, callerFile, _, _ := runtime.Caller(0)
+	executablePath := filepath.Dir(callerFile)
+
+	return filepath.Join(executablePath, "./build/wildproxy.min.js")
 }
 
 func main() {
@@ -95,7 +107,9 @@ func main() {
 	log.Infof("Starting server on %s", httpHost)
 	log.Infof("Proxying requests to %s/*", rootUrl)
 
+	scriptFile = getActualScriptFilePath()
 	fi, err := os.Stat(scriptFile)
+
 	if err != nil || fi.IsDir() {
 		log.Warnf("Error opening script %s: %s", scriptFile, err)
 		// Reset script file so it is not injected

@@ -57,7 +57,6 @@ func newProxy() *httputil.ReverseProxy {
 // Middleware to filter incoming requests before they are sent to the proxy
 func filterRequest(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		// simple hardcoded routing
 		switch r.URL.EscapedPath() {
 		case "/":

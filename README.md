@@ -66,7 +66,7 @@ Usage of wildproxy:
       --debug                       Dump outoging requests to debug
   -h, --host string                 Host to run HTTP server on (default "localhost:8080")
   -r, --root string                 Web root the proxy will be available at, prepended to all URLs
-  -s, --script string               Path to Javascript file to inject in every page (default "./wildproxy.js")
+  -s, --script string               Path to Javascript file to inject in every page (by default injects transpiled script from wildproxy dir)
   -t, --upstream-timeout duration   Timeout for requests to upstream servers (default 1m0s)
   -v, --verbose                     Verbose output
 
