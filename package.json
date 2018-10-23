@@ -16,7 +16,9 @@
     }
   },
   "lint-staged": {
-    "build/*.js": ["git add"]
+    "build/*.js": [
+      "git add"
+    ]
   },
   "babel": {
     "presets": [

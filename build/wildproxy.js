@@ -62,13 +62,33 @@
       }
     };
   };
+
+  var replace = function replace(func) {
+    return function () {
+      try {
+        return func.apply(void 0, arguments);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+  };
   /**
-   * History API CORS errors stubbing with window monkey patching
+   * history API CORS errors stubbing with window monkey patching
    */
 
 
   if (window.history) {
-    window.history.pushState = silentWrapper(window.history.pushState);
-    window.history.replaceState = silentWrapper(window.history.replaceState);
+    var pushState = window.history.pushState.bind(window.history),
+        replaceState = window.history.replaceState.bind(window.history);
+
+    history.pushState = function (state, title, url) {
+      var prependUrl = origin + '/' + targetURL + url;
+      pushState(state, title, prependUrl);
+    };
+
+    history.replaceState = function (state, title, url) {
+      var prependUrl = origin + '/' + targetURL + url;
+      replaceState(state, title, prependUrl);
+    };
   }
 })();
