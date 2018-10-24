@@ -5,10 +5,8 @@
   "author": "machinae",
   "license": "MIT",
   "scripts": {
-    "transpile": "babel js/wildproxy.js --out-dir build",
-    "minify": "uglifyjs build/wildproxy.js -o build/wildproxy.min.js -c -m",
-    "build": "rimraf build && npm run transpile && npm run minify",
-    "dev": "babel js/wildproxy.js --watch --out-file build/wildproxy.min.js"
+    "build": "webpack --mode production",
+    "dev": "webpack-dev-server --mode development"
   },
   "husky": {
     "hooks": {
@@ -16,23 +14,21 @@
     }
   },
   "lint-staged": {
-    "build/*.js": ["git add"]
-  },
-  "babel": {
-    "presets": [
-      "@babel/preset-env",
-      {}
+    "build/*.js": [
+      "git add"
     ]
   },
   "browserslist": "last 2 versions, not ie <= 8",
   "devDependencies": {
     "@babel/cli": "^7.1.2",
     "@babel/core": "^7.1.2",
-    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
     "@babel/preset-env": "^7.1.0",
+    "babel-loader": "^8.0.4",
     "husky": "^1.1.2",
     "lint-staged": "^7.3.0",
-    "rimraf": "^2.6.2",
-    "uglify-js": "^3.4.9"
-  }
+    "webpack": "^4.22.0",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-server": "^3.1.10"
+  },
+  "dependencies": {}
 }
