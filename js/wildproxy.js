@@ -65,8 +65,16 @@
   /**
    * History API CORS errors stubbing with window monkey patching
    */
-  if (window.history) {
-    window.history.pushState = silentWrapper(window.history.pushState)
-    window.history.replaceState = silentWrapper(window.history.replaceState)
-  }
+   if (window.history) {
+     const pushState = window.history.pushState.bind(window.history),
+     replaceState = window.history.replaceState.bind(window.history);
+     history.pushState = function(state, title, url) {
+       const prependUrl = origin + '/' + targetURL + url;
+       pushState(state, title, prependUrl)
+     }
+     history.replaceState = function(state, title, url) {
+       const prependUrl = origin + '/' + targetURL + url;
+       replaceState(state, title, prependUrl)
+     }
+   }
 })();
