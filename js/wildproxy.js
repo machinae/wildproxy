@@ -85,4 +85,35 @@ import parseUrl from 'url-parse';
     window.history.pushState = silentWrapper(window.history.pushState)
     window.history.replaceState = silentWrapper(window.history.replaceState)
   }
+
+  window.addEventListener('load', () => {
+    const attributeFilter = ['src', 'href'];
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(({ addedNodes, attributeName, target, type}) => {
+        if (type === 'childList') {
+          addedNodes.forEach(node => {
+            const attr = attributeFilter.find(attribute => attribute in node);
+
+            if (attr) {
+              node.setAttribute(attr, prepareUrl(node[attr]));
+            }
+          });
+        } else if (type === 'attributes') {
+          const oldUrl = target[attributeName];
+          const newUrl = prepareUrl(oldUrl);
+
+          if (newUrl !== oldUrl) {
+            target.setAttribute(attributeName, newUrl);
+          }
+        }
+      });
+    });
+
+    observer.observe(document.body, {
+      attributeFilter,
+      attributes: true,
+      childList: true,
+      subtree: true
+    });
+  });
 })();
