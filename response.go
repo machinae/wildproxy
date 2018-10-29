@@ -29,6 +29,16 @@ var (
 	formSelector goquery.Matcher
 	// Selector for inline style tags
 	styleSelector goquery.Matcher
+	securityHeaders = []string{
+		"Content-Security-Policy",
+		"Content-Security-Policy-Report-Only",
+		"Expect-CT",
+		"Public-Key-Pins",
+		"Public-Key-Pins-Report-Only",
+		"Strict-Transport-Security",
+		"X-Content-Type-Options",
+		"X-Frame-Options",
+	}
 )
 
 func compileSelectors() {
@@ -127,19 +137,19 @@ func resolveRedirect(r *http.Response) {
 // Remove various browser security headers like CSP and HSTS to fix framing
 // issues and improve privacy by disabling reporting
 func removeSecHeaders(r *http.Response) {
-	secHeaders := []string{
-		"Content-Security-Policy",
-		"Content-Security-Policy-Report-Only",
-		"Expect-CT",
-		"Public-Key-Pins",
-		"Public-Key-Pins-Report-Only",
-		"Strict-Transport-Security",
-		"X-Content-Type-Options",
-		"X-Frame-Options",
-	}
-
-	for _, h := range secHeaders {
+	for _, h := range securityHeaders {
 		r.Header.Del(h)
+	}
+}
+
+func removeSecMetaTags(head *goquery.Selection) {
+	for _, h := range securityHeaders {
+		securityMetaTag := fmt.Sprintf(`meta[http-equiv='%s']`, h)
+		securityMetaTagMatcher := cascadia.MustCompile(securityMetaTag)
+
+		head.FindMatcher(securityMetaTagMatcher).Each(func(i int, el *goquery.Selection) {
+			el.RemoveMatcher(securityMetaTagMatcher)
+		})
 	}
 }
 
@@ -209,6 +219,10 @@ func rewriteLinks(r *http.Response) error {
 		}
 		baseTag := fmt.Sprintf(`<base href="%s"/>`, baseUrl)
 		headEl.PrependHtml(baseTag)
+	}
+
+	if secHeaders {
+		removeSecMetaTags(headEl)
 	}
 
 	// Inject script
