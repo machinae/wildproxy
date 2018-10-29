@@ -21,6 +21,7 @@ import (
 var (
 	//regexp to match url() in stylesheets
 	cssRegex *regexp.Regexp
+	windowOriginReqex *regexp.Regexp
 
 	// CSS selector for attributes with href attribute to rewrite
 	hrefSelector goquery.Matcher
@@ -29,10 +30,21 @@ var (
 	formSelector goquery.Matcher
 	// Selector for inline style tags
 	styleSelector goquery.Matcher
+	securityHeaders = []string{
+		"Content-Security-Policy",
+		"Content-Security-Policy-Report-Only",
+		"Expect-CT",
+		"Public-Key-Pins",
+		"Public-Key-Pins-Report-Only",
+		"Strict-Transport-Security",
+		"X-Content-Type-Options",
+		"X-Frame-Options",
+	}
 )
 
 func compileSelectors() {
 	cssRegex = regexp.MustCompile(`url\(['"]?(.+?)['"]?\)`)
+	windowOriginReqex = regexp.MustCompile(`(window\.location\.origin)(?:\s*)(=*)`)
 
 	hrefSelector = cascadia.MustCompile("a,link")
 
@@ -81,6 +93,10 @@ func proxyResponse(r *http.Response) error {
 		defer r.Body.Close()
 		br := rewriteStyleUrls(r.Request.URL, r.Body)
 		r.Body = ioutil.NopCloser(br)
+	} else if isContentType("application/javascript", r) {
+		defer r.Body.Close()
+		br := rewriteJSContent(r.Request.URL, r.Body)
+		r.Body = ioutil.NopCloser(br)
 	}
 
 	return nil
@@ -127,19 +143,19 @@ func resolveRedirect(r *http.Response) {
 // Remove various browser security headers like CSP and HSTS to fix framing
 // issues and improve privacy by disabling reporting
 func removeSecHeaders(r *http.Response) {
-	secHeaders := []string{
-		"Content-Security-Policy",
-		"Content-Security-Policy-Report-Only",
-		"Expect-CT",
-		"Public-Key-Pins",
-		"Public-Key-Pins-Report-Only",
-		"Strict-Transport-Security",
-		"X-Content-Type-Options",
-		"X-Frame-Options",
-	}
-
-	for _, h := range secHeaders {
+	for _, h := range securityHeaders {
 		r.Header.Del(h)
+	}
+}
+
+func removeSecMetaTags(head *goquery.Selection) {
+	for _, h := range securityHeaders {
+		securityMetaTag := fmt.Sprintf(`meta[http-equiv='%s']`, h)
+		securityMetaTagMatcher := cascadia.MustCompile(securityMetaTag)
+
+		head.FindMatcher(securityMetaTagMatcher).Each(func(i int, el *goquery.Selection) {
+			el.RemoveMatcher(securityMetaTagMatcher)
+		})
 	}
 }
 
@@ -211,6 +227,10 @@ func rewriteLinks(r *http.Response) error {
 		headEl.PrependHtml(baseTag)
 	}
 
+	if secHeaders {
+		removeSecMetaTags(headEl)
+	}
+
 	// Inject script
 	if scriptFile != "" {
 		scriptTag := fmt.Sprintf(`<script src="/wildproxy.js"></script>`)
@@ -244,6 +264,28 @@ func rewriteStyleUrls(baseUrl *url.URL, r io.Reader) io.Reader {
 		return strings.Replace(matches[0], matches[1], resolvedUrl, 1)
 	})
 	return strings.NewReader(newCss)
+}
+
+func rewriteJSContent(baseUrl *url.URL, r io.Reader) io.Reader {
+	js, err := ioutil.ReadAll(r)
+	if err != nil {
+		return bytes.NewReader(js)
+	}
+
+	newJs := ReplaceAllStringSubmatchFunc(windowOriginReqex, string(js), func(matches []string) string {
+		if len(matches) < 3 {
+			return ""
+		}
+
+		if matches[2] != "=" {
+			windowOrigin := fmt.Sprintf("'%s://%s'", baseUrl.Scheme, baseUrl.Host)
+			return strings.Replace(matches[0], matches[1], windowOrigin, -1)
+		}
+
+		return ""
+	})
+
+	return strings.NewReader(newJs)
 }
 
 // convert a URL to relative from the proxy
