@@ -6,8 +6,9 @@ import parseUrl from 'url-parse';
   // Monkey patches XHR to proxy URLs
   // Source: https://github.com/Rob--W/cors-anywhere
   // Source: https://stackoverflow.com/questions/5202296/add-a-hook-to-all-ajax-requests-on-a-page
-  var origin = window.location.origin || (window.location.protocol + '//' + window.location.host + (window.location.port ? ':' + window.location.port : ''));
-  var targetURL = /^\/(https?:\/\/)?(w{3})?[a-z-\.]+/.exec(window.location.pathname)[0].replace(/^\//, '')
+  const origin = window.location.origin || (window.location.protocol + '//' + window.location.host + (window.location.port ? ':' + window.location.port : ''));
+  const targetURL = /^\/(https?:\/\/)?(w{3})?[a-z-\.]+/.exec(window.location.pathname)[0].replace(/^\//, '');
+  const parsedTargetUrl = parseUrl(targetURL);
 
   var open = XMLHttpRequest.prototype.open;
 
@@ -54,7 +55,11 @@ import parseUrl from 'url-parse';
     const parsedUrl = parseUrl(url);
 
     if (/^http/.test(url)) {
-      return parsedUrl.origin === origin ? url : `${origin}/${url}`;
+      if (parsedUrl.origin !== origin && parsedUrl.hostname.includes(parsedTargetUrl.hostname)) {
+        return `${origin}/${url}`;
+      } else {
+        return url;
+      }
     } else {
       const withoutLeadingSlash = url[0] !== '/';
       let result = origin;
@@ -94,25 +99,34 @@ import parseUrl from 'url-parse';
    }
  }
 
+  function updadeNodeSourceAttribute(node, attributeName) {
+    const oldUrl = node[attributeName];
+    const newUrl = prepareUrl(oldUrl);
+
+    if (newUrl !== oldUrl) {
+      node.setAttribute(attributeName, newUrl);
+    }
+  }
+
   window.addEventListener('load', () => {
     const attributeFilter = ['src', 'href'];
+    const sourceSelector = attributeFilter.reduce((accumulator, currentValue) => `[${accumulator}], [${currentValue}]`);
     const observer = new MutationObserver(mutations => {
       mutations.forEach(({ addedNodes, attributeName, target, type}) => {
         if (type === 'childList') {
           addedNodes.forEach(node => {
-            const attr = attributeFilter.find(attribute => attribute in node);
+            const children = node.querySelectorAll ? node.querySelectorAll(sourceSelector) : [];
 
-            if (attr) {
-              node.setAttribute(attr, prepareUrl(node[attr]));
-            }
+            [node, ...children].forEach(n => {
+              const attr = attributeFilter.find(attribute => attribute in n);
+
+              if (attr) {
+                updadeNodeSourceAttribute(n, attr);
+              }
+            });
           });
         } else if (type === 'attributes') {
-          const oldUrl = target[attributeName];
-          const newUrl = prepareUrl(oldUrl);
-
-          if (newUrl !== oldUrl) {
-            target.setAttribute(attributeName, newUrl);
-          }
+          updadeNodeSourceAttribute(target, attributeName);
         }
       });
     });
