@@ -4,3 +4,4 @@ import './elementMutations';
 import './historyAPI';
 import './requests';
 import './windowOpen';
+import './postMessage';
