@@ -71,19 +71,6 @@ import parseUrl from 'url-parse';
   }
 
   /**
-   * Wraps function in try/catch for bypassing errors and application crashes
-   * @param {Function} func Function for wrap
-   * @returns {Function} Wrapper function
-   */
-  const silentWrapper = (func) => (...args) => {
-    try {
-      return func(...args)
-    } catch (err) {
-      console.warn(err)
-    }
-  }
-
-  /**
    * History API CORS errors stubbing with window monkey patching
    */
  if (window.history) {
