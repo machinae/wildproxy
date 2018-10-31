@@ -312,14 +312,22 @@ func resolveProxyURL(pageUrl *url.URL, rawUrl string) string {
 	if err != nil {
 		return rawUrl
 	}
+
 	// Remove the ending slash for correct url resolve.
 	// http://host/path/ and newPath should resolve to http://host/newPath/ , but not http://host/path/newPath
 	// See https://play.golang.org/p/2JfBbaXOAMy
 	pageUrl.Path = strings.TrimSuffix(pageUrl.Path, "/")
+
 	// Resolve absolute URL for the page
 	nu := pageUrl.ResolveReference(u)
+
+	nu, err = url.Parse("./" + nu.String())
+	if err != nil {
+		return nu.String()
+	}
+
 	// Resolve again from the proxy
-	nu = rootUrl.ResolveReference(&url.URL{Path: nu.String()})
+	nu = rootUrl.ResolveReference(nu)
 	return nu.String()
 }
 
