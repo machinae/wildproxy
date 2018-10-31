@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -100,6 +99,9 @@ func proxyResponse(r *http.Response) error {
 		br := rewriteJSContent(r.Request.URL, r.Body)
 		r.Body = ioutil.NopCloser(br)
 	}
+
+	// The 'Content-Length' header is set automatically
+	r.Header.Del("Content-Length")
 
 	return nil
 }
@@ -254,8 +256,6 @@ func rewriteLinks(r *http.Response) error {
 		return err
 	}
 
-	r.ContentLength = int64(len(html))
-	r.Header.Set("Content-Length", strconv.Itoa(len(html)))
 	r.Body = ioutil.NopCloser(strings.NewReader(html))
 	return nil
 }
