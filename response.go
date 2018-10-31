@@ -27,6 +27,7 @@ var (
 	hrefSelector goquery.Matcher
 	// CSS selector for attributes with src attribute to rewrite
 	srcSelector  goquery.Matcher
+	linkSelector  goquery.Matcher
 	formSelector goquery.Matcher
 	// Selector for inline style tags
 	styleSelector goquery.Matcher
@@ -54,6 +55,7 @@ func compileSelectors() {
 		srcSelector = cascadia.MustCompile("script")
 	}
 
+	linkSelector = cascadia.MustCompile("link")
 	formSelector = cascadia.MustCompile("form[action]")
 	styleSelector = cascadia.MustCompile("style")
 }
@@ -183,11 +185,20 @@ func rewriteLinks(r *http.Response) error {
 
 	// Replace script src
 	doc.FindMatcher(srcSelector).Each(func(i int, el *goquery.Selection) {
+		el.RemoveAttr("integrity")
+		el.RemoveAttr("crossorigin")
+
 		src, ok := el.Attr("src")
 		if !ok {
 			return
 		}
 		el.SetAttr("src", resolveProxyURL(doc.Url, src))
+	})
+
+	// Links
+	doc.FindMatcher(linkSelector).Each(func(i int, el *goquery.Selection) {
+		el.RemoveAttr("integrity")
+		el.RemoveAttr("crossorigin")
 	})
 
 	//Forms
