@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -27,6 +26,7 @@ var (
 	hrefSelector goquery.Matcher
 	// CSS selector for attributes with src attribute to rewrite
 	srcSelector  goquery.Matcher
+	linkSelector  goquery.Matcher
 	formSelector goquery.Matcher
 	// Selector for inline style tags
 	styleSelector goquery.Matcher
@@ -54,6 +54,7 @@ func compileSelectors() {
 		srcSelector = cascadia.MustCompile("script")
 	}
 
+	linkSelector = cascadia.MustCompile("link")
 	formSelector = cascadia.MustCompile("form[action]")
 	styleSelector = cascadia.MustCompile("style")
 }
@@ -98,6 +99,9 @@ func proxyResponse(r *http.Response) error {
 		br := rewriteJSContent(r.Request.URL, r.Body)
 		r.Body = ioutil.NopCloser(br)
 	}
+
+	// The 'Content-Length' header is set automatically
+	r.Header.Del("Content-Length")
 
 	return nil
 }
@@ -183,11 +187,20 @@ func rewriteLinks(r *http.Response) error {
 
 	// Replace script src
 	doc.FindMatcher(srcSelector).Each(func(i int, el *goquery.Selection) {
+		el.RemoveAttr("integrity")
+		el.RemoveAttr("crossorigin")
+
 		src, ok := el.Attr("src")
 		if !ok {
 			return
 		}
 		el.SetAttr("src", resolveProxyURL(doc.Url, src))
+	})
+
+	// Links
+	doc.FindMatcher(linkSelector).Each(func(i int, el *goquery.Selection) {
+		el.RemoveAttr("integrity")
+		el.RemoveAttr("crossorigin")
 	})
 
 	//Forms
@@ -243,8 +256,6 @@ func rewriteLinks(r *http.Response) error {
 		return err
 	}
 
-	r.ContentLength = int64(len(html))
-	r.Header.Set("Content-Length", strconv.Itoa(len(html)))
 	r.Body = ioutil.NopCloser(strings.NewReader(html))
 	return nil
 }
@@ -301,10 +312,22 @@ func resolveProxyURL(pageUrl *url.URL, rawUrl string) string {
 	if err != nil {
 		return rawUrl
 	}
+
+	// Remove the ending slash for correct url resolve.
+	// http://host/path/ and newPath should resolve to http://host/newPath/ , but not http://host/path/newPath
+	// See https://play.golang.org/p/2JfBbaXOAMy
+	pageUrl.Path = strings.TrimSuffix(pageUrl.Path, "/")
+
 	// Resolve absolute URL for the page
 	nu := pageUrl.ResolveReference(u)
+
+	nu, err = url.Parse("./" + nu.String())
+	if err != nil {
+		return nu.String()
+	}
+
 	// Resolve again from the proxy
-	nu = rootUrl.ResolveReference(&url.URL{Path: nu.String()})
+	nu = rootUrl.ResolveReference(nu)
 	return nu.String()
 }
 

@@ -7,7 +7,7 @@ module.exports = {
     hot: true
   },
   entry: {
-    'wildproxy': './js/wildproxy.js'
+    'wildproxy': './js/index.js'
   },
   output: {
     path: path.join(__dirname, 'build'),
