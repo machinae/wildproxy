@@ -304,8 +304,8 @@ func resolveProxyURL(pageUrl *url.URL, rawUrl string) string {
 	if pageUrl == nil || pageUrl.Host == "" {
 		return rawUrl
 	}
-	// data urls don't need to be resolved
-	if strings.HasPrefix(rawUrl, "data:") {
+	// data urls don't and hash urls need to be resolved
+	if strings.HasPrefix(rawUrl, "data:") || strings.HasPrefix(rawUrl, "#") {
 		return rawUrl
 	}
 	u, err := url.Parse(rawUrl)
