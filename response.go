@@ -19,17 +19,17 @@ import (
 
 var (
 	//regexp to match url() in stylesheets
-	cssRegex *regexp.Regexp
+	cssRegex          *regexp.Regexp
 	windowOriginReqex *regexp.Regexp
 
 	// CSS selector for attributes with href attribute to rewrite
 	hrefSelector goquery.Matcher
 	// CSS selector for attributes with src attribute to rewrite
 	srcSelector  goquery.Matcher
-	linkSelector  goquery.Matcher
+	linkSelector goquery.Matcher
 	formSelector goquery.Matcher
 	// Selector for inline style tags
-	styleSelector goquery.Matcher
+	styleSelector   goquery.Matcher
 	securityHeaders = []string{
 		"Content-Security-Policy",
 		"Content-Security-Policy-Report-Only",
@@ -246,7 +246,8 @@ func rewriteLinks(r *http.Response) error {
 
 	// Inject script
 	if scriptFile != "" {
-		scriptTag := fmt.Sprintf(`<script src="/wildproxy.js"></script>`)
+		dat, _ := ioutil.ReadFile(scriptFile)
+		scriptTag := fmt.Sprintf("<script>" + string(dat) + "</script>")
 		headEl.PrependHtml(scriptTag)
 	}
 
