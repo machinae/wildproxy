@@ -1,11 +1,15 @@
 import { prepareUrl } from './utils';
 
 function updateNodeSourceAttribute(node, attributeName) {
-  const oldUrl = node[attributeName];
+  const oldUrl = node.getAttribute(attributeName);
   const newUrl = prepareUrl(oldUrl);
 
   if (newUrl !== oldUrl) {
-    node.setAttribute(attributeName, newUrl);
+    // Fix this.removeEventListener in load event
+    const clonedNode = node.cloneNode(true);
+
+    clonedNode.setAttribute(attributeName, newUrl);
+    node.parentNode.replaceChild(clonedNode, node);
   }
 }
 
