@@ -261,7 +261,8 @@ func rewriteLinks(r *http.Response) error {
 
 	// Inject script
 	if scriptFile != "" {
-		scriptTag := fmt.Sprintf(`<script src="/wildproxy.js"></script>`)
+		dat, _ := ioutil.ReadFile(scriptFile)
+		scriptTag := fmt.Sprintf("<script>" + string(dat) + "</script>")
 		headEl.PrependHtml(scriptTag)
 	}
 
@@ -324,8 +325,8 @@ func resolveProxyURL(pageUrl *url.URL, rawUrl string) string {
 	if pageUrl == nil || pageUrl.Host == "" {
 		return rawUrl
 	}
-	// data urls don't need to be resolved
-	if strings.HasPrefix(rawUrl, "data:") {
+	// data urls don't and hash urls need to be resolved
+	if strings.HasPrefix(rawUrl, "data:") || strings.HasPrefix(rawUrl, "#") {
 		return rawUrl
 	}
 	u, err := url.Parse(rawUrl)

@@ -7,11 +7,17 @@ if (window.history) {
   const { history } = window;
   const originalPushState = history.pushState.bind(history);
   const originalReplaceState = history.replaceState.bind(history);
+  const changeStateFunc = (originalFunction, state, title, url) => {
+    if (!url.includes('/http')) {
+      originalFunction(state, title, prepareUrl(url));
+    }
+  };
 
   history.pushState = function(state, title, url) {
-    originalPushState(state, title, prepareUrl(url))
+    changeStateFunc(originalPushState, state, title, url);
   }
+
   history.replaceState = function(state, title, url) {
-    originalReplaceState(state, title, prepareUrl(url))
+    changeStateFunc(originalReplaceState, state, title, url);
   }
 }
