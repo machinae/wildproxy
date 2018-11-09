@@ -16,7 +16,8 @@ var testPage = `
 	  	<link rel="stylesheet" href="/assets/style.css" />
 	  </head>
 	  <body>
-	  	<h1>Hello, World</h1>
+		<h1>Hello, World</h1>
+		<div style="background-image: url(/assets/images/app-01.jpg); background-repeat: no-repeat; background-size: cover; background-attachment: scroll; background-position: 50% 0px;"></div>
 		<img src="https://cdn.example.com/logo.png" />
 		<img src="/static/header.jpg" />
 		<a href="https://www.example.com/page/1">Page 1</a>
@@ -32,6 +33,8 @@ var testPage = `
 
 func TestProxyResponse(t *testing.T) {
 	assert := assert.New(t)
+
+	compileSelectors()
 
 	rootUrl = &url.URL{Path: "/"}
 
@@ -50,9 +53,6 @@ func TestProxyResponse(t *testing.T) {
 	assert.NoError(err)
 	body := string(rawBody)
 
-	// Base element
-	assert.Contains(body, `<base href="https://www.example.com/page/0"/>`)
-
 	// images and stylesheets should not be proxied
 	assert.Contains(body, `<img src="https://cdn.example.com/logo.png"/>`)
 
@@ -68,10 +68,15 @@ func TestProxyResponse(t *testing.T) {
 	// script src also rewritten
 	assert.Contains(body, `<script src="/https://cdn.example.com/scripts/script.js">`)
 
+	assert.Contains(body, `<img src="https://www.example.com/static/header.jpg"/>`)
+	assert.Contains(body, `background-image: url(https://www.example.com/assets/images/app-01.jpg)`)
 }
 
 func TestParseCSS(t *testing.T) {
 	assert := assert.New(t)
+
+	compileSelectors()
+
 	rootUrl = &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
 	pageUrl := &url.URL{Scheme: "http", Host: "www.example.com", Path: "/"}
 
@@ -85,13 +90,29 @@ func TestParseCSS(t *testing.T) {
 	}
 	`
 
-	r := strings.NewReader(style)
-	out := rewriteStyleUrls(pageUrl, r)
+	cases := []struct {
+		RewriteAll bool
+		Excepted   string
+	}{
+		{
+			RewriteAll: true,
+			Excepted:   `src:url("http://localhost/http://www.example.com/font/ProximaNova-Sbold-webfont.eot");`,
+		},
+		{
+			RewriteAll: false,
+			Excepted:   `src:url("http://www.example.com/font/ProximaNova-Sbold-webfont.eot");`,
+		},
+	}
 
-	newCss, err := ioutil.ReadAll(out)
-	assert.NoError(err)
+	for _, c := range cases {
+		rewriteAll = c.RewriteAll
+		r := strings.NewReader(style)
+		out := rewriteStyleUrls(pageUrl, r)
 
-	outStr := string(newCss)
+		newCss, err := ioutil.ReadAll(out)
+		assert.NoError(err)
 
-	assert.Contains(outStr, `src:url("http://localhost/http://www.example.com/font/ProximaNova-Sbold-webfont.eot");`)
+		outStr := string(newCss)
+		assert.Contains(outStr, c.Excepted)
+	}
 }
