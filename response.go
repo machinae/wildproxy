@@ -25,12 +25,14 @@ var (
 	// CSS selector for attributes with href attribute to rewrite
 	hrefSelector goquery.Matcher
 	// CSS selector for attributes with src attribute to rewrite
-	srcSelector  goquery.Matcher
-	linkSelector goquery.Matcher
-	formSelector goquery.Matcher
+	srcSelector   goquery.Matcher
+	mediaSelector goquery.Matcher
+	linkSelector  goquery.Matcher
+	formSelector  goquery.Matcher
 	// Selector for inline style tags
-	styleSelector   goquery.Matcher
-	securityHeaders = []string{
+	styleSelector     goquery.Matcher
+	styleAttrSelector goquery.Matcher
+	securityHeaders   = []string{
 		"Content-Security-Policy",
 		"Content-Security-Policy-Report-Only",
 		"Expect-CT",
@@ -54,9 +56,12 @@ func compileSelectors() {
 		srcSelector = cascadia.MustCompile("script")
 	}
 
+	mediaSelector = cascadia.MustCompile("img,video,audio")
+
 	linkSelector = cascadia.MustCompile("link")
 	formSelector = cascadia.MustCompile("form[action]")
 	styleSelector = cascadia.MustCompile("style")
+	styleAttrSelector = cascadia.MustCompile("[style]")
 }
 
 // Function that modifes the response
@@ -197,6 +202,15 @@ func rewriteLinks(r *http.Response) error {
 		el.SetAttr("src", resolveProxyURL(doc.Url, src))
 	})
 
+	// Replace media
+	doc.FindMatcher(mediaSelector).Each(func(i int, el *goquery.Selection) {
+		src, ok := el.Attr("src")
+		if !ok {
+			return
+		}
+		el.SetAttr("src", absoluteURL(doc.Url, src))
+	})
+
 	// Links
 	doc.FindMatcher(linkSelector).Each(func(i int, el *goquery.Selection) {
 		el.RemoveAttr("integrity")
@@ -222,22 +236,23 @@ func rewriteLinks(r *http.Response) error {
 		}
 	})
 
+	doc.FindMatcher(styleAttrSelector).Each(func(i int, el *goquery.Selection) {
+		css, ok := el.Attr("style")
+		if !ok {
+			return
+		}
+		r := rewriteStyleUrls(doc.Url, strings.NewReader(css))
+		newCSS, err := ioutil.ReadAll(r)
+		if err == nil && len(newCSS) > 0 {
+			el.SetAttr("style", string(newCSS))
+		}
+	})
+
 	// HTML Head
 	headEl := doc.Find("head")
 	if headEl == nil {
 		doc.Append("head")
 		headEl = doc.Find("head")
-	}
-
-	// Add <base> tag set to original root so other paths are resolved
-	// correctly
-	if doc.Url != nil {
-		baseUrl := doc.Url.String()
-		if rewriteAll {
-			baseUrl = resolveProxyURL(rootUrl, doc.Url.String())
-		}
-		baseTag := fmt.Sprintf(`<base href="%s"/>`, baseUrl)
-		headEl.PrependHtml(baseTag)
 	}
 
 	if secHeaders {
@@ -272,7 +287,12 @@ func rewriteStyleUrls(baseUrl *url.URL, r io.Reader) io.Reader {
 			return ""
 		}
 		urlString := matches[1]
-		resolvedUrl := resolveProxyURL(baseUrl, urlString)
+
+		resolvedUrl := absoluteURL(baseUrl, urlString)
+		if rewriteAll {
+			resolvedUrl = resolveProxyURL(baseUrl, urlString)
+		}
+
 		return strings.Replace(matches[0], matches[1], resolvedUrl, 1)
 	})
 	return strings.NewReader(newCss)
@@ -329,6 +349,25 @@ func resolveProxyURL(pageUrl *url.URL, rawUrl string) string {
 
 	// Resolve again from the proxy
 	nu = rootUrl.ResolveReference(nu)
+	return nu.String()
+}
+
+func absoluteURL(pageURL *url.URL, raw string) string {
+	if pageURL == nil || pageURL.Host == "" {
+		return raw
+	}
+
+	if strings.HasPrefix(raw, "data:") || strings.HasPrefix(raw, "http") || strings.HasPrefix(raw, "//") {
+		return raw
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+
+	nu := pageURL.ResolveReference(u)
+
 	return nu.String()
 }
 
