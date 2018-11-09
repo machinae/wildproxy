@@ -3,6 +3,10 @@ import parseUrl from 'url-parse';
 import { TARGET_URL, ORIGIN_URL } from './constants';
 
 export const prepareUrl = url => {
+  if (!url) {
+    return url;
+  }
+
   const parsedUrl = parseUrl(url);
 
   if (/^http/.test(url)) {
