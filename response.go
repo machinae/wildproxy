@@ -28,7 +28,8 @@ var (
 	srcSelector   goquery.Matcher
 	mediaSelector goquery.Matcher
 	linkSelector  goquery.Matcher
-	formSelector  goquery.Matcher
+	scriptSelector goquery.Matcher
+	formSelector goquery.Matcher
 	// Selector for inline style tags
 	styleSelector     goquery.Matcher
 	styleAttrSelector goquery.Matcher
@@ -59,6 +60,7 @@ func compileSelectors() {
 	mediaSelector = cascadia.MustCompile("img,video,audio")
 
 	linkSelector = cascadia.MustCompile("link")
+	scriptSelector = cascadia.MustCompile("script")
 	formSelector = cascadia.MustCompile("form[action]")
 	styleSelector = cascadia.MustCompile("style")
 	styleAttrSelector = cascadia.MustCompile("[style]")
@@ -259,11 +261,29 @@ func rewriteLinks(r *http.Response) error {
 		removeSecMetaTags(headEl)
 	}
 
+	targetScriptUrls := "window.targetScriptUrls = ["
+	// Remove external scripts
+	doc.FindMatcher(scriptSelector).Each(func(i int, el *goquery.Selection) {
+		src, ok := el.Attr("src")
+
+		if !ok || src == "" {
+			return
+		}
+
+		targetScriptUrls += fmt.Sprintf(`"%s",`, src)
+		el.Remove()
+	})
+
+	targetScriptUrls += "]"
+
+	targetScriptUrlsScript := fmt.Sprintf("<script>" + string(targetScriptUrls) + "</script>")
+	headEl.AppendHtml(targetScriptUrlsScript)
+
 	// Inject script
 	if scriptFile != "" {
 		dat, _ := ioutil.ReadFile(scriptFile)
 		scriptTag := fmt.Sprintf("<script>" + string(dat) + "</script>")
-		headEl.PrependHtml(scriptTag)
+		headEl.AppendHtml(scriptTag)
 	}
 
 	// replace with modified body
