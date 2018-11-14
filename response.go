@@ -255,6 +255,14 @@ func rewriteLinks(r *http.Response) error {
 		headEl = doc.Find("head")
 	}
 
+	// Add <base> tag set to original root so other paths are resolved
+	// correctly
+	if doc.Url != nil {
+		baseUrl := doc.Url.String()
+		baseTag := fmt.Sprintf(`<base href="%s"/>`, baseUrl)
+		headEl.PrependHtml(baseTag)
+	}
+
 	if secHeaders {
 		removeSecMetaTags(headEl)
 	}
@@ -287,12 +295,7 @@ func rewriteStyleUrls(baseUrl *url.URL, r io.Reader) io.Reader {
 			return ""
 		}
 		urlString := matches[1]
-
-		resolvedUrl := absoluteURL(baseUrl, urlString)
-		if rewriteAll {
-			resolvedUrl = resolveProxyURL(baseUrl, urlString)
-		}
-
+		resolvedUrl := resolveProxyURL(baseUrl, urlString)
 		return strings.Replace(matches[0], matches[1], resolvedUrl, 1)
 	})
 	return strings.NewReader(newCss)

@@ -17,7 +17,6 @@ var testPage = `
 	  </head>
 	  <body>
 		<h1>Hello, World</h1>
-		<div style="background-image: url(/assets/images/app-01.jpg); background-repeat: no-repeat; background-size: cover; background-attachment: scroll; background-position: 50% 0px;"></div>
 		<img src="https://cdn.example.com/logo.png" />
 		<img src="/static/header.jpg" />
 		<a href="https://www.example.com/page/1">Page 1</a>
@@ -53,6 +52,9 @@ func TestProxyResponse(t *testing.T) {
 	assert.NoError(err)
 	body := string(rawBody)
 
+	// Base element
+	assert.Contains(body, `<base href="https://www.example.com/page/0"/>`)
+
 	// images and stylesheets should not be proxied
 	assert.Contains(body, `<img src="https://cdn.example.com/logo.png"/>`)
 
@@ -69,7 +71,6 @@ func TestProxyResponse(t *testing.T) {
 	assert.Contains(body, `<script src="/https://cdn.example.com/scripts/script.js">`)
 
 	assert.Contains(body, `<img src="https://www.example.com/static/header.jpg"/>`)
-	assert.Contains(body, `background-image: url(https://www.example.com/assets/images/app-01.jpg)`)
 }
 
 func TestParseCSS(t *testing.T) {
@@ -90,29 +91,12 @@ func TestParseCSS(t *testing.T) {
 	}
 	`
 
-	cases := []struct {
-		RewriteAll bool
-		Excepted   string
-	}{
-		{
-			RewriteAll: true,
-			Excepted:   `src:url("http://localhost/http://www.example.com/font/ProximaNova-Sbold-webfont.eot");`,
-		},
-		{
-			RewriteAll: false,
-			Excepted:   `src:url("http://www.example.com/font/ProximaNova-Sbold-webfont.eot");`,
-		},
-	}
+	r := strings.NewReader(style)
+	out := rewriteStyleUrls(pageUrl, r)
 
-	for _, c := range cases {
-		rewriteAll = c.RewriteAll
-		r := strings.NewReader(style)
-		out := rewriteStyleUrls(pageUrl, r)
+	newCss, err := ioutil.ReadAll(out)
+	assert.NoError(err)
 
-		newCss, err := ioutil.ReadAll(out)
-		assert.NoError(err)
-
-		outStr := string(newCss)
-		assert.Contains(outStr, c.Excepted)
-	}
+	outStr := string(newCss)
+	assert.Contains(outStr, `src:url("http://localhost/http://www.example.com/font/ProximaNova-Sbold-webfont.eot");`)
 }
