@@ -18,7 +18,7 @@ const loadScript = url =>
       console.error(`Error loading script ${url}: ${error}`);
     });
 
-const scriptPromises = window.targetScriptUrls.map(url => loadScript(url));
+const scriptPromises = [...targetScriptUrls, ...targetAsyncScriptUrls].map(url => loadScript(url));
 
 Promise.all(scriptPromises).then(scripts => {
   scripts.forEach(script => {

@@ -6,7 +6,7 @@ export default new Proxy(proxyObject(originalWindow), {
   set(target, property, value) {
     target[property] = value;
 
-    if (!value.isProxyObject) {
+    if (!value || !value.isProxyObject) {
       originalWindow[property] = value;
     }
 
