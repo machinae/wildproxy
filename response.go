@@ -20,7 +20,6 @@ import (
 var (
 	//regexp to match url() in stylesheets
 	cssRegex          *regexp.Regexp
-	windowOriginReqex *regexp.Regexp
 
 	// CSS selector for attributes with href attribute to rewrite
 	hrefSelector goquery.Matcher
@@ -47,7 +46,6 @@ var (
 
 func compileSelectors() {
 	cssRegex = regexp.MustCompile(`url\(['"]?(.+?)['"]?\)`)
-	windowOriginReqex = regexp.MustCompile(`(window\.location\.origin)(?:\s*)(=*)`)
 
 	hrefSelector = cascadia.MustCompile("a,link")
 
@@ -100,10 +98,6 @@ func proxyResponse(r *http.Response) error {
 	} else if isContentType("text/css", r) {
 		defer r.Body.Close()
 		br := rewriteStyleUrls(r.Request.URL, r.Body)
-		r.Body = ioutil.NopCloser(br)
-	} else if isContentType("application/javascript", r) {
-		defer r.Body.Close()
-		br := rewriteJSContent(r.Request.URL, r.Body)
 		r.Body = ioutil.NopCloser(br)
 	}
 
@@ -316,28 +310,6 @@ func rewriteStyleUrls(baseUrl *url.URL, r io.Reader) io.Reader {
 		return strings.Replace(matches[0], matches[1], resolvedUrl, 1)
 	})
 	return strings.NewReader(newCss)
-}
-
-func rewriteJSContent(baseUrl *url.URL, r io.Reader) io.Reader {
-	js, err := ioutil.ReadAll(r)
-	if err != nil {
-		return bytes.NewReader(js)
-	}
-
-	newJs := ReplaceAllStringSubmatchFunc(windowOriginReqex, string(js), func(matches []string) string {
-		if len(matches) < 3 {
-			return ""
-		}
-
-		if matches[2] != "=" {
-			windowOrigin := fmt.Sprintf("'%s://%s'", baseUrl.Scheme, baseUrl.Host)
-			return strings.Replace(matches[0], matches[1], windowOrigin, -1)
-		}
-
-		return ""
-	})
-
-	return strings.NewReader(newJs)
 }
 
 // convert a URL to relative from the proxy
