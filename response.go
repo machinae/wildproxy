@@ -256,21 +256,30 @@ func rewriteLinks(r *http.Response) error {
 	}
 
 	targetScriptUrls := "window.targetScriptUrls = ["
+	targetAsyncScriptUrls := "window.targetAsyncScriptUrls = ["
 	// Remove external scripts
 	doc.FindMatcher(scriptSelector).Each(func(i int, el *goquery.Selection) {
-		src, ok := el.Attr("src")
+		srcAttr, srcAttrExist := el.Attr("src")
+		_, asyncAttrExist:= el.Attr("async")
+		_, deferAttrExist := el.Attr("defer")
 
-		if !ok || src == "" {
+		if !srcAttrExist || srcAttr == "" {
 			return
 		}
 
-		targetScriptUrls += fmt.Sprintf(`"%s",`, src)
+		if asyncAttrExist || deferAttrExist {
+			targetAsyncScriptUrls += fmt.Sprintf(`"%s",`, srcAttr)
+		} else {
+			targetScriptUrls += fmt.Sprintf(`"%s",`, srcAttr)
+		}
+
 		el.Remove()
 	})
 
-	targetScriptUrls += "]"
+	targetScriptUrls += "];"
+	targetAsyncScriptUrls += "];"
 
-	targetScriptUrlsScript := fmt.Sprintf("<script>" + string(targetScriptUrls) + "</script>")
+	targetScriptUrlsScript := fmt.Sprintf("<script>%s%s</script>", string(targetScriptUrls), string(targetAsyncScriptUrls))
 	headEl.AppendHtml(targetScriptUrlsScript)
 
 	// Inject script
