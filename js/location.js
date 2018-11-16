@@ -33,7 +33,7 @@ Object.defineProperties(proxiedLocation, {
   },
   href: {
     get() {
-      return getParsedOriginalPathname().href;
+      return getParsedOriginalPathname().href + this.hash;
     },
     set(value) {
      originalWindow.location = prepareUrl(value);
