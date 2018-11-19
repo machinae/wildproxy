@@ -5,6 +5,7 @@ import './historyAPI';
 import './requests';
 import './windowOpen';
 import './postMessage';
+import './events';
 
 import window from './window';
 import location from './location';
