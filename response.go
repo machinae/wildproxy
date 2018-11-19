@@ -20,7 +20,6 @@ import (
 var (
 	//regexp to match url() in stylesheets
 	cssRegex          *regexp.Regexp
-	windowOriginReqex *regexp.Regexp
 
 	// CSS selector for attributes with href attribute to rewrite
 	hrefSelector goquery.Matcher
@@ -28,7 +27,8 @@ var (
 	srcSelector   goquery.Matcher
 	mediaSelector goquery.Matcher
 	linkSelector  goquery.Matcher
-	formSelector  goquery.Matcher
+	scriptSelector goquery.Matcher
+	formSelector goquery.Matcher
 	// Selector for inline style tags
 	styleSelector     goquery.Matcher
 	styleAttrSelector goquery.Matcher
@@ -46,7 +46,6 @@ var (
 
 func compileSelectors() {
 	cssRegex = regexp.MustCompile(`url\(['"]?(.+?)['"]?\)`)
-	windowOriginReqex = regexp.MustCompile(`(window\.location\.origin)(?:\s*)(=*)`)
 
 	hrefSelector = cascadia.MustCompile("a,link")
 
@@ -59,6 +58,7 @@ func compileSelectors() {
 	mediaSelector = cascadia.MustCompile("img,video,audio")
 
 	linkSelector = cascadia.MustCompile("link")
+	scriptSelector = cascadia.MustCompile("script")
 	formSelector = cascadia.MustCompile("form[action]")
 	styleSelector = cascadia.MustCompile("style")
 	styleAttrSelector = cascadia.MustCompile("[style]")
@@ -98,10 +98,6 @@ func proxyResponse(r *http.Response) error {
 	} else if isContentType("text/css", r) {
 		defer r.Body.Close()
 		br := rewriteStyleUrls(r.Request.URL, r.Body)
-		r.Body = ioutil.NopCloser(br)
-	} else if isContentType("application/javascript", r) {
-		defer r.Body.Close()
-		br := rewriteJSContent(r.Request.URL, r.Body)
 		r.Body = ioutil.NopCloser(br)
 	}
 
@@ -267,11 +263,38 @@ func rewriteLinks(r *http.Response) error {
 		removeSecMetaTags(headEl)
 	}
 
+	targetScriptUrls := "window.targetScriptUrls = ["
+	targetAsyncScriptUrls := "window.targetAsyncScriptUrls = ["
+	// Remove external scripts
+	doc.FindMatcher(scriptSelector).Each(func(i int, el *goquery.Selection) {
+		srcAttr, srcAttrExist := el.Attr("src")
+		_, asyncAttrExist:= el.Attr("async")
+		_, deferAttrExist := el.Attr("defer")
+
+		if !srcAttrExist || srcAttr == "" {
+			return
+		}
+
+		if asyncAttrExist || deferAttrExist {
+			targetAsyncScriptUrls += fmt.Sprintf(`"%s",`, srcAttr)
+		} else {
+			targetScriptUrls += fmt.Sprintf(`"%s",`, srcAttr)
+		}
+
+		el.Remove()
+	})
+
+	targetScriptUrls += "];"
+	targetAsyncScriptUrls += "];"
+
+	targetScriptUrlsScript := fmt.Sprintf("<script>%s%s</script>", string(targetScriptUrls), string(targetAsyncScriptUrls))
+	headEl.AppendHtml(targetScriptUrlsScript)
+
 	// Inject script
 	if scriptFile != "" {
 		dat, _ := ioutil.ReadFile(scriptFile)
 		scriptTag := fmt.Sprintf("<script>" + string(dat) + "</script>")
-		headEl.PrependHtml(scriptTag)
+		headEl.AppendHtml(scriptTag)
 	}
 
 	// replace with modified body
@@ -299,28 +322,6 @@ func rewriteStyleUrls(baseUrl *url.URL, r io.Reader) io.Reader {
 		return strings.Replace(matches[0], matches[1], resolvedUrl, 1)
 	})
 	return strings.NewReader(newCss)
-}
-
-func rewriteJSContent(baseUrl *url.URL, r io.Reader) io.Reader {
-	js, err := ioutil.ReadAll(r)
-	if err != nil {
-		return bytes.NewReader(js)
-	}
-
-	newJs := ReplaceAllStringSubmatchFunc(windowOriginReqex, string(js), func(matches []string) string {
-		if len(matches) < 3 {
-			return ""
-		}
-
-		if matches[2] != "=" {
-			windowOrigin := fmt.Sprintf("'%s://%s'", baseUrl.Scheme, baseUrl.Host)
-			return strings.Replace(matches[0], matches[1], windowOrigin, -1)
-		}
-
-		return ""
-	})
-
-	return strings.NewReader(newJs)
 }
 
 // convert a URL to relative from the proxy
