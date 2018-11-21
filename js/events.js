@@ -1,5 +1,7 @@
 const { document } = window;
 const originalAddEventListener = window.addEventListener;
+const originalRemoveEventListener = window.removeEventListener;
+
 const addEventListener = (type, listener, options) => {
   if (
     (document.readyState !== 'loading' && type === 'DOMContentLoaded') ||
@@ -7,9 +9,14 @@ const addEventListener = (type, listener, options) => {
   ) {
     listener();
   } else {
-    originalAddEventListener(type, listener, options);
+    originalAddEventListener.call(window, type, listener, options);
   }
 };
 
-window.addEventListener = addEventListener;
-document.addEventListener = addEventListener;
+const removeEventListener = () => {
+  originalRemoveEventListener.apply(window, arguments);
+}
+
+window.addEventListener = document.addEventListener = addEventListener;
+window.removeEventListener = removeEventListener;
+
