@@ -32,13 +32,22 @@ const scriptPromises = [...targetScriptUrls, ...targetAsyncScriptUrls].map(url =
 
 Promise.all(scriptPromises).then(scripts => {
   scripts.forEach(script => {
+    // Fix function context if this === window
+    const functionRegexp = /(function)\s*(\w*)\s*(\([\s,={}:\w]*\)\s*{)\s*(?!["|']use strict["|'])(?!\W)/g;
+    const replacer = (match, definition, name, parameters) => {
+      const functionName = name === '' ? 'f_' + Math.ceil(Math.random() * 10000) : name;
+      const injectedCode = `if(window.window === this && ${functionName} instanceof Function && ${functionName}.name === '${functionName}') { return ${functionName}.apply(window, arguments); }`;
+      return `${definition} ${functionName} ${parameters} ${injectedCode}`
+    };
+    const changedScript = script.replace(functionRegexp, replacer);
+
     try {
       // Attempt to save global script variables in the window object
-      const dynamicFunction = new Function('window', 'saveVarsObject', `with(saveVarsObject){${script}}`);
+      const dynamicFunction = new Function('window', 'saveVarsObject', `with(saveVarsObject){${changedScript}}`);
       dynamicFunction.call(window, window, saveVarsObject);
     } catch (error) {
       console.error('Error execute script:', error);
-      const dynamicFunction = new Function('window', script);
+      const dynamicFunction = new Function('window', changedScript);
       dynamicFunction.call(window, window);
     }
   })
