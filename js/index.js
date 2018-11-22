@@ -35,7 +35,7 @@ Promise.all(scriptPromises).then(scripts => {
     // Fix function context if this === window
     const functionRegexp = /(function)\s*(\w*)\s*(\([\s,={}:\w]*\)\s*{)\s*(?!["|']use strict["|'])(?!\W)/g;
     const replacer = (match, definition, name, parameters) => {
-      const functionName = name === '' ? 'f_' + Math.ceil(Math.random() * 10000) : name;
+      const functionName = name === '' ? 'f_name' : name;
       const injectedCode = `if(window.window === this && ${functionName} instanceof Function && ${functionName}.name === '${functionName}') { return ${functionName}.apply(window, arguments); }`;
       return `${definition} ${functionName} ${parameters} ${injectedCode}`
     };
