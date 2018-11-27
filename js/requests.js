@@ -22,7 +22,7 @@ window.fetch = function(request, init = {}, dontPrepare = false) {
   };
   const url = dontPrepare ? request : prepareUrl(request.url || request);
 
-  return originalFetch.call(this, url, options)
+  return originalFetch.call(window, url, options)
 }
 
 // Monkey patch jQuery.ajax if it exists
