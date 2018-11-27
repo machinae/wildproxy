@@ -13,6 +13,12 @@ function updateNodeSourceAttribute(node, attributeName) {
   }
 }
 
+function checkIfrelativeLink(node) {
+  return (node.nodeName === 'a' || node.nodeName === 'A') &&
+  node.getAttribute('href') &&
+  node.getAttribute('href')[0] === '/';
+}
+
 window.addEventListener('load', () => {
   const attributeFilter = ['src', 'href'];
   const sourceSelector = attributeFilter.reduce((accumulator, currentValue) => `[${accumulator}], [${currentValue}]`);
@@ -25,12 +31,16 @@ window.addEventListener('load', () => {
           [node, ...children].forEach(n => {
             const attr = attributeFilter.find(attribute => attribute in n);
 
-            if (attr) {
+            if (attr &&
+              !checkIfrelativeLink(n)
+             ) {
               updateNodeSourceAttribute(n, attr);
             }
           });
         });
-      } else if (type === 'attributes') {
+      } else if (type === 'attributes' &&
+        !checkIfrelativeLink(target)
+      ) {
         updateNodeSourceAttribute(target, attributeName);
       }
     });
