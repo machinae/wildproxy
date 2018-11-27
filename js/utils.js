@@ -10,7 +10,7 @@ export const prepareUrl = url => {
   const parsedUrl = parseUrl(url);
 
   if (/^http/.test(url)) {
-    return parsedUrl.origin === origin ? url : `${origin}/${url}`;
+    return parsedUrl.origin === ORIGIN_URL ? url : `${ORIGIN_URL}/${url}`;
   } else {
     const withoutLeadingSlash = url[0] !== '/';
     let result = ORIGIN_URL;

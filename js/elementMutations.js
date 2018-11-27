@@ -4,7 +4,7 @@ function updateNodeSourceAttribute(node, attributeName) {
   const oldUrl = node.getAttribute(attributeName);
   const newUrl = prepareUrl(oldUrl);
 
-  if (newUrl !== oldUrl) {
+  if (newUrl !== oldUrl && node.parentNode) {
     // Fix this.removeEventListener in load event
     const clonedNode = node.cloneNode(true);
 
