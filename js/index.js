@@ -22,7 +22,7 @@ const saveVarsObject = new Proxy({}, {
 });
 
 const loadScript = url =>
-  fetch(url)
+  fetch(url, {}, true)
     .then(response => response.text())
     .catch(error => {
       console.error(`Error loading script ${url}: ${error}`);
