@@ -8,9 +8,13 @@ export const prepareUrl = url => {
   }
 
   const parsedUrl = parseUrl(url);
-
   if (/^http/.test(url)) {
-    return parsedUrl.origin === ORIGIN_URL ? url : `${ORIGIN_URL}/${url}`;
+    if(parsedUrl.origin === ORIGIN_URL){
+      const hasUrlInside = /^\/http/.test(parsedUrl.pathname);
+      return hasUrlInside ? url : `${ORIGIN_URL}/${TARGET_URL}${parsedUrl.pathname}${parsedUrl.query}`;
+    } else {
+      return `${ORIGIN_URL}/${url}`;
+    }
   } else {
     const withoutLeadingSlash = url[0] !== '/';
     let result = ORIGIN_URL;
