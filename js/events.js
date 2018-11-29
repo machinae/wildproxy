@@ -21,7 +21,6 @@ const handleMessageEvent = listener => event => {
 
 const addEventListener = (type, listener, options) => {
   if (
-    (document.readyState !== 'loading' && type === 'DOMContentLoaded') ||
     (document.readyState === 'complete' && type === 'load')
   ) {
     listener();
@@ -38,4 +37,3 @@ const removeEventListener = () => {
 
 window.addEventListener = document.addEventListener = addEventListener;
 window.removeEventListener = removeEventListener;
-
