@@ -263,32 +263,32 @@ func rewriteLinks(r *http.Response) error {
 		removeSecMetaTags(headEl)
 	}
 
-	targetScriptUrls := "window.targetScriptUrls = ["
-	targetAsyncScriptUrls := "window.targetAsyncScriptUrls = ["
-	// Remove external scripts
-	doc.FindMatcher(scriptSelector).Each(func(i int, el *goquery.Selection) {
-		srcAttr, srcAttrExist := el.Attr("src")
-		_, asyncAttrExist:= el.Attr("async")
-		_, deferAttrExist := el.Attr("defer")
-
-		if !srcAttrExist || srcAttr == "" {
-			return
-		}
-
-		if asyncAttrExist || deferAttrExist {
-			targetAsyncScriptUrls += fmt.Sprintf(`"%s",`, srcAttr)
-		} else {
-			targetScriptUrls += fmt.Sprintf(`"%s",`, srcAttr)
-		}
-
-		el.Remove()
-	})
-
-	targetScriptUrls += "];"
-	targetAsyncScriptUrls += "];"
-
-	targetScriptUrlsScript := fmt.Sprintf("<script>%s%s</script>", string(targetScriptUrls), string(targetAsyncScriptUrls))
-	headEl.AppendHtml(targetScriptUrlsScript)
+	// targetScriptUrls := "window.targetScriptUrls = ["
+	// targetAsyncScriptUrls := "window.targetAsyncScriptUrls = ["
+	// // Remove external scripts
+	// doc.FindMatcher(scriptSelector).Each(func(i int, el *goquery.Selection) {
+	// 	srcAttr, srcAttrExist := el.Attr("src")
+	// 	_, asyncAttrExist:= el.Attr("async")
+	// 	_, deferAttrExist := el.Attr("defer")
+	//
+	// 	if !srcAttrExist || srcAttr == "" {
+	// 		return
+	// 	}
+	//
+	// 	if asyncAttrExist || deferAttrExist {
+	// 		targetAsyncScriptUrls += fmt.Sprintf(`"%s",`, srcAttr)
+	// 	} else {
+	// 		targetScriptUrls += fmt.Sprintf(`"%s",`, srcAttr)
+	// 	}
+	//
+	// 	el.Remove()
+	// })
+	//
+	// targetScriptUrls += "];"
+	// targetAsyncScriptUrls += "];"
+	//
+	// targetScriptUrlsScript := fmt.Sprintf("<script>%s%s</script>", string(targetScriptUrls), string(targetAsyncScriptUrls))
+	// headEl.AppendHtml(targetScriptUrlsScript)
 
 	// Inject script
 	if scriptFile != "" {

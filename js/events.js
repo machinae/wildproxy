@@ -20,12 +20,13 @@ const handleMessageEvent = listener => event => {
 };
 
 const addEventListener = (type, listener, options) => {
-  if (
-    (document.readyState !== 'loading' && type === 'DOMContentLoaded') ||
-    (document.readyState === 'complete' && type === 'load')
-  ) {
-    listener();
-  } else if (type === 'message') {
+  // if (
+  //   (document.readyState !== 'loading' && type === 'DOMContentLoaded') ||
+  //   (document.readyState === 'complete' && type === 'load')
+  // ) {
+  //   listener();
+  // } else
+  if (type === 'message') {
     originalAddEventListener.call(window, type, handleMessageEvent(listener), options);
   } else {
     originalAddEventListener.call(window, type, listener, options);
@@ -38,4 +39,3 @@ const removeEventListener = () => {
 
 window.addEventListener = document.addEventListener = addEventListener;
 window.removeEventListener = removeEventListener;
-
