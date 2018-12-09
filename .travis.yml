@@ -1,0 +1,36 @@
+language: go
+go:
+- '1.10'
+install: make install
+script:
+- make test
+- make build
+- mv $TRAVIS_BUILD_DIR/codedeploy/* $TRAVIS_BUILD_DIR/bin/
+- cd $TRAVIS_BUILD_DIR/bin
+- zip -r latest *
+- mkdir -p dsource
+- mv latest.zip dsource/latest.zip
+deploy:
+- provider: s3
+  access_key_id: "$AWS_ACCESS_KEY"
+  secret_access_key: "$AWS_SECRET_KEY"
+  bucket: "$AWS_S3_BUCKET"
+  region: "$AWS_REGION"
+  skip_cleanup: true
+  local_dir: dsource
+  upload-dir: wildproxy
+- provider: codedeploy
+  access_key_id: "$AWS_ACCESS_KEY"
+  secret_access_key: "$AWS_SECRET_KEY"
+  bucket: "$AWS_S3_BUCKET"
+  region: "$AWS_REGION"
+  key: wildproxy/latest.zip
+  bundle: zip
+  application: wildproxy-dev-app
+  deployment_group: wildproxy-dev-deployment-group
+env:
+  global:
+  - secure: NqN1YBaEThjllxq/uLRJGi5vPIg/ExDzqSfF0u+S9WbgSiQ1IV9A1yJZhYs4tebLQyB3100VXu37jKTHlMWp+bK29g/zbCzC+V1YrQbLmSDlfXeTOe2QWBNhJu+IWrvFBhlGLNFS8ONfBe/35eoUHOUBLSWsOYkK7HUFlf1eTv75BjgyQoOyxMHSsAnEdGZ+5taT0kBKHBWhG93Zlv/sG4XlyLyTWuqcLORkRjUTWgiTycQi7R1JjFhwXPwbm4UutPbUTxl5iWpo/DAgAydjGZtEu9NdCjNXDkc4S5F3GSk92v2Fo5cetujgnQ5l195t5aCQRCBjMRGkoDDFQZKpzqse3fkrzvnhIGosDHjpWBOOEYnjqAlHD/c/GMRVvFntFWZYfjxJk23Oxu2gcleLVCVJe1d+5I4q2C64J7CaPF3qMMdzumPQYSlYeshc0v6f4tQZDHFV2UoLJLj9CLCdmFRKtZ99c905f+hLoYUudnIc1FpnJnXpcT+Ke+ciGetXlrxhOD7shqROm1uDSsC2N4UAaWTI3AWnKOWJXJfvIHAQbuzkM8wIa+L3T6opaTIiWnd9BUovW0lKzZp+L95YnLPYZKBBi7HDQPJnCU+1TyZwgXm272fu6GrJpJHU/c2gveXUvhTeKDCp1e/RWxwRx7jvaW944r+MdjhTvB2EHKU=
+  - secure: OPCmiYFQxf0NWdghmi0I5EZbXwXjx+s82pxj52PQwnwz93jR39YAaV/KPp7Bjg3ASfqneGddo6tbEt2nlD8EKuTBer1fyxOE5wyJ9T2ZwUMpWqM1c/hiIZJeaa+NaQLEutxKrPZJ7sGkBdlWu0ULr5OLr1KZh9tiI/mkVQxX76kaSZyvk8s2uGjKIImpgjmQzQ9HEagsYiSm6DsIRBQxtxyexe2lfcY/6dubc2XrFbI3c3wf9T2WKnswLukGJVMjfudmBYYcWFELW0QTZwPY2alDl0+emPAFYyOrF+O6+2meYhJnmWbKP8Dyid4UU9GoSltf5RSZMrGcRBDNxJBYw+XfRy4oxLG92Njw0eTwKPRf1DjH8pQOpRb2phXfQqNVwJkohpnGspgCAcV8lSiVc76vSO5355LJUgnTRZJRVH/LM7ayiIrm2sS255s26HKhHE80Hm4IPU5q8FddamPWBzf75pJrRT9abc8+67/yLtd3bWeXJ+ZE2Pm3PzWCA3VsDAA9E38rzTrMIvrsTYCNgF52asb9vwKLG576I/d5SgQ+mvezRphgI7mV0XWcU3LE053kCkNOWG0H2978DjfMpTVhJIcOQBZz7GPkP40XuJTv0GYkcMaiHrHxbRrdJTKdc/j1z3aBzr/tkf6vCmHbRhGTNWIdfxG9WWmuIch9k/s=
+  - secure: LdYWUZ9vF0xU6Y1npZd7VqqvEKUWCjPzvjygR8biB4mRt73wWWnjPnxD4iDYHBx6upca6tFWcQ6e80HDtmWXRZUojQzlQDnMOftW/A+bia3PDfehse0G8avle4kxXuL+wsEU6Ez+Jcoe4o/45512Hod9wV919ytgAVjHVyjCM6AXQJAB2y23eFedNz+bkmqJoYuIS3ksY3gn2NcTjN7mSTYgVTIDRtYvLf4sReXIllKii8fsgPJopnk0fjiUsApAZGt/a0IEb9XLtYSqqze6i6rgn7NPbZaEjFoQkW95GgWZZMDgO3S8HdAJHHsJAa1OmMH7CkcYgV0IqWTlT0BvN4Or4ICK/47nGLvzJJVwJqO53rqBxBmfydYIVaqeHMruruPc+hQcEX4zdYTKFOgYIFxgzbhwFFJFa0RL/6mqmPYZL38r/5kNy8hTPwQIGOARwRD16vowKy6+ZkJBDqZRXyyjuGqxft+9djF1WtfP+LcCLyEUIL+VVEMskV6los4AWK7F5kmI4ry0x4DNX+zWY5ekBNL0Rgm55bP0Ko2+6jb3Z76qJh6gKJ4BLuqCcWw78DdIpWue2XTrv9+LXnc1C6GaFIGIyoiS/NUqqLrd76b61XgAXjtWX+nqYpuvNE3NYwlZkmM+tClx/Fxo+R4xdHT5IepD7gvn4rlHRpKzk0g=
+  - secure: L2FrDkb/mNynsyYpp/d03Ffz+Ru6DPFBK+TxqQiPZt32piMN/ZAteDem/YOflurAdZ9FF04bqaYkC9CKsGhZ2GuYSXhOXg953rGV6JXFd9V29l7ZU8Q/yX8DPOVesopKHHsmaR62uhXqslXe6D55HvR2rdVndv0jnX+vq5e0EAGc/uK9E032T/8RzAuC7F8fgKiHaz5bYyBlrMtG/3Y/BhF+8nsyl6J73XG2ybDaWBpCepN51nv3o2oEmf4gF9AJ3afUq/YgLtZZp0ACplCXWu6uW1SQEeRKhS4821C/8Ll/YLro0YXNh/W1yemc4qIIJOWXHMHMZaRpfS72vNFVrcGsf++DnDemtRGFMvyejElMOh2+oJIl5KSg98gpwYguXp3//PheSIM6vQgLR1sHedOV3HaFXNUuURlEJILJk0gwIhw92OpDNrot4j7Y9orf0EtVnS+wY9SHGA1AQwZ4c4lXv5/0BbvsM3Kun6K9zfTGhG/Mcr7CKNiKpEXTxKWnPaqNgQpo2HAOdh4Nl7MymNGCzBrbbo20oJSRaUdqTXI3dfsTWIVULZiRWUpFlO5eNsPijHwQjW6hEXVtIKXkRtKp8dCAITl00QlTiNyMLcyxnmhtmPLFyYEY9Qmen4Y7wwD+yXZwxuCq2+0hEIPUPvta8cMr1M80cXveFmufvHo=
