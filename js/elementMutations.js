@@ -4,13 +4,19 @@ function updateNodeSourceAttribute(node, attributeName) {
   const oldUrl = node.getAttribute(attributeName);
   const newUrl = prepareUrl(oldUrl);
 
-  if (newUrl !== oldUrl) {
+  if (newUrl !== oldUrl && node.parentNode) {
     // Fix this.removeEventListener in load event
     const clonedNode = node.cloneNode(true);
 
     clonedNode.setAttribute(attributeName, newUrl);
     node.parentNode.replaceChild(clonedNode, node);
   }
+}
+
+function checkIfrelativeLink(node) {
+  return (node.nodeName === 'a' || node.nodeName === 'A') &&
+  node.getAttribute('href') &&
+  node.getAttribute('href')[0] === '/';
 }
 
 window.addEventListener('load', () => {
@@ -25,12 +31,16 @@ window.addEventListener('load', () => {
           [node, ...children].forEach(n => {
             const attr = attributeFilter.find(attribute => attribute in n);
 
-            if (attr) {
+            if (attr &&
+              !checkIfrelativeLink(n)
+             ) {
               updateNodeSourceAttribute(n, attr);
             }
           });
         });
-      } else if (type === 'attributes') {
+      } else if (type === 'attributes' &&
+        !checkIfrelativeLink(target)
+      ) {
         updateNodeSourceAttribute(target, attributeName);
       }
     });

@@ -8,9 +8,7 @@ if (window.history) {
   const originalPushState = history.pushState.bind(history);
   const originalReplaceState = history.replaceState.bind(history);
   const changeStateFunc = (originalFunction, state, title, url) => {
-    if (!url.includes('/http')) {
-      originalFunction(state, title, prepareUrl(url));
-    }
+    originalFunction(state, title, prepareUrl(url));
   };
 
   history.pushState = function(state, title, url) {

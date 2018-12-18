@@ -51,7 +51,7 @@ var (
 func init() {
 	flag.StringVarP(&httpHost, "host", "h", "localhost:8080", "Host to run HTTP server on")
 	flag.StringVarP(&webRoot, "root", "r", "", "Web root the proxy will be available at, prepended to all URLs")
-	flag.StringVarP(&scriptFile, "script", "s", "./wildproxy.js", "Path to Javascript file to inject in every page")
+	flag.StringVarP(&scriptFile, "script", "s", "./build/wildproxy.min.js", "Path to Javascript file to inject in every page")
 	flag.DurationVarP(&upstreamTimeout, "upstream-timeout", "t", 60*time.Second, "Timeout for requests to upstream servers")
 	flag.DurationVarP(&clientTimeout, "client-timeout", "T", 60*time.Second, "Timeout for requests from clients to this server")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose output")

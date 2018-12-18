@@ -14,15 +14,15 @@ window.XMLHttpRequest.prototype.open = function() {
 // Proxying fetch requests
 const originalFetch = window.fetch;
 
-window.fetch = function(request, init = {}) {
+window.fetch = function(request, init = {}, dontPrepare = false) {
   const options = {
     method: init.method,
     headers: init.headers,
     body: init.body,
   };
-  const url = prepareUrl(request.url || request);
+  const url = dontPrepare ? request : prepareUrl(request.url || request);
 
-  return originalFetch.call(this, url, options)
+  return originalFetch.call(window, url, options)
 }
 
 // Monkey patch jQuery.ajax if it exists
