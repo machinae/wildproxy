@@ -20,6 +20,8 @@ deploy:
   skip_cleanup: true
   local_dir: dsource
   upload-dir: wildproxy
+  on:
+    branch: master
 - provider: codedeploy
   access_key_id: "$AWS_ACCESS_KEY"
   secret_access_key: "$AWS_SECRET_KEY"
@@ -29,6 +31,8 @@ deploy:
   bundle: zip
   application: wildproxy-dev-app
   deployment_group: wildproxy-dev-deployment-group
+  on:
+    branch: master
 env:
   global:
   - secure: N0BqKlKBTrUnSQj8ueVaK1OrH2ni4hNjG/hCyWXW+uFppmM+zfKnPAnKzB5y23s1xeB1vJka1jvdD9xhv6qy+q61rontsp2WWY99xhPdzjskxNy4V3MSvIb/22pUaSRHSWbWBB+58fNm6cE7n2AS7IPYy0Mxo1cD9+LColVvqeOV1AhY8/8tzleOR4DzRDhOZs9AN0Gl/wse8C7g1Ut465h6wIzgvc8AoQI9UI/yfXkDclWWzzFbbyPxnwQN/2NVIH8EJ2PB2RuzDQ6sg/FZo1udXSrksow5S3nF3p41SjyBNPRv5JEgV5ZXfJ4nSz4z4O3++89BDp2RkKkhc2anma0DPlZfvfUFjWy6yPZDi1BTg7RG2iyGuWijP1Pz9+uGZC+xEE+ewV70iZx8B5PMwMYvSiCIZGjdwdVYKdISiP+dGbGV9xJ0KSq+fpoKfz2sLLcGFa+fOUJCDMmASSzbGGCf+Ibsc/v4e104HSBu7AAuQrN8/NJgTXpmnrOoIafkRFeU1l/kgOdwGDL3W2sga2BT0lLnt7mm1I9KILouUxrlXx7ibuomZ4R3t/k8jyztM9S/0/Io4tOe6V7ELHkHKyyl3yd+B2j6oKfRT6ZiTNp6kb8EVOkPPqdnOCO4D0QyD8JCQTIwhNqWhiOmYIu/gUhxcZSH9MbOVuXt3oqy01g=
