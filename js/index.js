@@ -1,5 +1,6 @@
 // Javascript automatically injected in every page as inline script
 
+import './beforeStart';
 import './elementMutations';
 import './historyAPI';
 import './requests';
