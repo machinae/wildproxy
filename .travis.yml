@@ -8,9 +8,9 @@ script:
 - mv $TRAVIS_BUILD_DIR/build $TRAVIS_BUILD_DIR/bin/
 - mv $TRAVIS_BUILD_DIR/codedeploy/* $TRAVIS_BUILD_DIR/bin/
 - cd $TRAVIS_BUILD_DIR/bin
-- zip -r latest *
+- zip -r $TRAVIS_COMMIT *
 - mkdir -p dsource
-- mv latest.zip dsource/latest.zip
+- mv $TRAVIS_COMMIT.zip dsource/$TRAVIS_COMMIT.zip
 deploy:
 - provider: s3
   bucket: "$AWS_S3_BUCKET"
@@ -21,7 +21,7 @@ deploy:
     branch: master
 - provider: codedeploy
   bucket: "$AWS_S3_BUCKET"
-  key: wildproxy/latest.zip
+  key: wildproxy/$TRAVIS_COMMIT.zip
   bundle: zip
   application: wildproxy-dev-app
   deployment_group: wildproxy-dev-deployment-group
